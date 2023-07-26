@@ -16,17 +16,28 @@ spring:
     timeout: 2592000
   # 数据库配置
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/yeying_bi
-    username: root
-    password: 123456
+    dynamic:
+      primary: master #设置默认的数据源或者数据源组,默认值即为master
+      strict: false #严格匹配数据源,默认false. true未匹配到指定数据源时抛异常,false使用默认数据源
+      datasource:
+        master:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/yeying_bi
+          username: root
+          password: 123456
+        userDS:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/yeying_user_upload_table
+          username: root
+          password: 123456
+
   # Redis 配置
-#  redis:
-#    database: 1
-#    host: localhost
-#    port: 6379
-#    timeout: 5000
-#    password: 123456
+  redis:
+    database: 1
+    host: localhost
+    port: 6379
+    timeout: 5000
+    password: 123456
 
   # 文件上传
   servlet:
@@ -42,6 +53,11 @@ server:
     session:
       cookie:
         max-age: 2592000
+yuapi:
+  client:
+    access-key: pqpiv757eqjlgemfvv2bj8mtkb4lad5o
+    secret-key: jj34jdenp5dah032p28h3lvynmcog08e
+  modelId: 1681584105285783554
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: false

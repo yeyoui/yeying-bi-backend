@@ -7,13 +7,17 @@ import com.yeyou.yeyingBIbackend.common.ErrorCode;
 import com.yeyou.yeyingBIbackend.constant.CommonConstant;
 import com.yeyou.yeyingBIbackend.exception.BusinessException;
 import com.yeyou.yeyingBIbackend.model.dto.chartInfo.ChartInfoQueryRequest;
+import com.yeyou.yeyingBIbackend.model.dto.chartInfo.GenChartByAiResponse;
 import com.yeyou.yeyingBIbackend.model.entity.*;
+import com.yeyou.yeyingBIbackend.model.vo.ChartInfoVO;
 import com.yeyou.yeyingBIbackend.service.ChartInfoService;
 import com.yeyou.yeyingBIbackend.mapper.ChartInfoMapper;
 import com.yeyou.yeyingBIbackend.service.UserService;
+import com.yeyou.yeyingBIbackend.utils.ParseChartResultUtil;
 import com.yeyou.yeyingBIbackend.utils.SqlUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -76,8 +80,8 @@ public class ChartInfoServiceImpl extends ServiceImpl<ChartInfoMapper, ChartInfo
         // 拼接查询条件
         //1.按照图表ID查询
         queryWrapper.eq(ObjectUtils.isNotEmpty(id), "id", id);
-
-        queryWrapper.eq(ObjectUtils.isNotEmpty(name), "name", name);
+        //按照图标名称模糊查询
+        queryWrapper.like(ObjectUtils.isNotEmpty(name), "name", name);
         //todo 2.按照用户自己ID查询
         //3.按照目的查询
         if (StringUtils.isNotBlank(goal)) {
@@ -92,7 +96,3 @@ public class ChartInfoServiceImpl extends ServiceImpl<ChartInfoMapper, ChartInfo
     }
 
 }
-
-
-
-

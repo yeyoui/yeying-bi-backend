@@ -12,6 +12,8 @@ public enum ErrorCode {
     NO_AUTH_ERROR(40101, "无权限"),
     NOT_FOUND_ERROR(40400, "请求数据不存在"),
     FORBIDDEN_ERROR(40300, "禁止访问"),
+    PAYLOAD_LARGE_ERROR(41300, "内容过大"),
+    RATE_LIMITER_ERROR(42900, "请求速度过快"),
     SYSTEM_ERROR(50000, "系统内部异常"),
     OPERATION_ERROR(50001, "操作失败");
 

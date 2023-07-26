@@ -35,3 +35,21 @@ create table if not exists chart_info
     index idx_chartid (id),
     index inx_uid (uid)
 ) comment '图标信息表' collate = utf8mb4_unicode_ci;
+
+-- 创建库
+create database if not exists yeying_user_upload_table;
+-- 切换库
+use yeying_user_upload_table;
+-- 用户表格元数据
+drop table if exists user_chart_info;
+create table user_chart_info
+(
+    id          bigint auto_increment comment '图表id' primary key,
+    fieldsName  varchar(1024)                      not null comment '表格对应的字段名称',
+    `rowNum`    int comment '行数',
+    `columnNum` int comment '列数',
+    parentId      bigint   default 0 comment '前一次生成的图表Id',
+    createTime  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete    tinyint  default 0                 not null comment '是否删除'
+) comment '用户表格元数据' collate = utf8mb4_unicode_ci;

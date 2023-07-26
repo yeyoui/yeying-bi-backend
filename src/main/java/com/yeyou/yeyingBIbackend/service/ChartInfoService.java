@@ -25,5 +25,4 @@ public interface ChartInfoService extends IService<ChartInfo> {
      * @return
      */
     QueryWrapper<ChartInfo> getQueryWrapper(ChartInfoQueryRequest postQueryRequest);
-
 }

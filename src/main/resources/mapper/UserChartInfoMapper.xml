@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yeyou.yeyingBIbackend.mapper.UserChartInfoMapper">
+
+    <resultMap id="BaseResultMap" type="com.yeyou.yeyingBIbackend.model.entity.UserChartInfo">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="fieldsName" column="fieldsName" jdbcType="VARCHAR"/>
+        <result property="rowNum" column="rowNum" jdbcType="INTEGER"/>
+        <result property="columnNum" column="columnNum" jdbcType="INTEGER"/>
+        <result property="parentId" column="parentId" jdbcType="BIGINT"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,fieldsName,rowNum,columnNum,parentId,
+        createTime,updateTime,isDelete
+    </sql>
+    <insert id="insertToUserTable">
+        ${sqlStatement}
+    </insert>
+    <update id="createUserTable" parameterType="string">
+        ${sqlStatement}
+    </update>
+</mapper>

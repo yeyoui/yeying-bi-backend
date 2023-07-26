@@ -1,34 +1,37 @@
 package com.yeyou.yeyingBIbackend.controller;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.gson.Gson;
 import com.yeyou.yeyingBIbackend.annotation.AuthCheck;
-import com.yeyou.yeyingBIbackend.common.BaseResponse;
-import com.yeyou.yeyingBIbackend.common.DeleteRequest;
-import com.yeyou.yeyingBIbackend.common.ErrorCode;
-import com.yeyou.yeyingBIbackend.common.ResultUtils;
+import com.yeyou.yeyingBIbackend.common.*;
 import com.yeyou.yeyingBIbackend.constant.FileConstant;
 import com.yeyou.yeyingBIbackend.constant.UserConstant;
 import com.yeyou.yeyingBIbackend.exception.BusinessException;
 import com.yeyou.yeyingBIbackend.exception.ThrowUtils;
 import com.yeyou.yeyingBIbackend.model.dto.chartInfo.*;
-import com.yeyou.yeyingBIbackend.model.dto.file.UploadFileRequest;
 import com.yeyou.yeyingBIbackend.model.entity.ChartInfo;
 import com.yeyou.yeyingBIbackend.model.entity.User;
 import com.yeyou.yeyingBIbackend.model.enums.FileUploadBizEnum;
 import com.yeyou.yeyingBIbackend.service.ChartInfoService;
+import com.yeyou.yeyingBIbackend.service.UserChartInfoService;
 import com.yeyou.yeyingBIbackend.service.UserService;
+import com.yeyou.yeyingBIbackend.utils.ExcelUtils;
+import com.yeyou.yeyingBIbackend.utils.ParseChartResultUtil;
+import com.yupi.yucongming.dev.client.YuCongMingClient;
+import com.yupi.yucongming.dev.model.DevChatRequest;
+import com.yupi.yucongming.dev.model.DevChatResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * 帖子接口
@@ -43,7 +46,15 @@ public class ChartController {
     private ChartInfoService chartInfoService;
 
     @Resource
+    private YuCongMingClient yuCongMingClient;
+
+    @Resource
+    private UserChartInfoService userChartInfoService;
+    @Resource
     private UserService userService;
+
+    @Value("${yuapi.modelId}")
+    private long aiModel;
 
     private final static Gson GSON = new Gson();
 
@@ -156,6 +167,11 @@ public class ChartController {
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
         Page<ChartInfo> chartInfoPage = chartInfoService.page(new Page<>(current, size),
                 chartInfoService.getQueryWrapper(chartInfoQueryRequest));
+        //处理表格数据
+        chartInfoPage
+                .getRecords()
+                .forEach(chartInfo -> chartInfo
+                        .setGenResult(ParseChartResultUtil.getResultAndChartCode(chartInfo.getGenResult()).getChartJsCode()));
         return ResultUtils.success(chartInfoPage);
     }
 
@@ -223,47 +239,56 @@ public class ChartController {
      * @return
      */
     @PostMapping("/genChartByAi")
-    public BaseResponse<String> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
+    public BaseResponse<GenChartByAiResponse> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
                                              GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
-
-        String goal = genChartByAiRequest.getGoal();
-        String name = genChartByAiRequest.getName();
+        //获取当前用户信息
+        User loginUser = userService.getLoginUser(request);
+        String userGoal = genChartByAiRequest.getUserGoal();
+        String chartName = genChartByAiRequest.getChartName();
         String chartType = genChartByAiRequest.getChartType();
         //校验请求信息
-        ThrowUtils.throwIf(goal==null,ErrorCode.PARAMS_ERROR,"目标为空");
-        ThrowUtils.throwIf(name==null,ErrorCode.PARAMS_ERROR,"图标名称为空");
-        ThrowUtils.throwIf(chartType==null,ErrorCode.PARAMS_ERROR,"图标类型为空");
-        //todo
-        FileUploadBizEnum fileUploadBizEnum = FileUploadBizEnum.getEnumByValue("biz");
-        if (fileUploadBizEnum == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        validFile(multipartFile, fileUploadBizEnum);
-        User loginUser = userService.getLoginUser(request);
-        // 文件目录：根据业务、用户来划分
-        String uuid = RandomStringUtils.randomAlphanumeric(8);
-        String filename = uuid + "-" + multipartFile.getOriginalFilename();
-        String filepath = String.format("/%s/%s/%s", fileUploadBizEnum.getValue(), loginUser.getId(), filename);
-        File file = null;
-        try {
-            // 上传文件
-            file = File.createTempFile(filepath, null);
-            multipartFile.transferTo(file);
-//            cosManager.putObject(filepath, file);
-            // 返回可访问地址
-            return ResultUtils.success(FileConstant.COS_HOST + filepath);
-        } catch (Exception e) {
-            log.error("file upload error, filepath = " + filepath, e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
-        } finally {
-            if (file != null) {
-                // 删除临时文件
-                boolean delete = file.delete();
-                if (!delete) {
-                    log.error("file delete error, filepath = {}", filepath);
-                }
-            }
-        }
+        ThrowUtils.throwIf(userGoal==null,ErrorCode.PARAMS_ERROR,"目标为空");
+        ThrowUtils.throwIf(chartName==null,ErrorCode.PARAMS_ERROR,"图表名称为空");
+        ThrowUtils.throwIf(chartType==null,ErrorCode.PARAMS_ERROR,"图表类型为空");
+        //校验文件信息
+        //文件不能过大
+        long size = multipartFile.getSize();
+        ThrowUtils.throwIf(size> FileConstant.MAX_EXCEL_FILE_SIZE,ErrorCode.PAYLOAD_LARGE_ERROR);
+        String originalFilename = multipartFile.getOriginalFilename();
+        String fileSuffix = FileUtil.getSuffix(originalFilename);
+        ThrowUtils.throwIf(!FileConstant.ACCEPTED_SUFFIX_LIST.contains(fileSuffix),ErrorCode.PAYLOAD_LARGE_ERROR);
+
+        //拼接提问信息
+        StringBuilder aiRequestMsg = new StringBuilder();
+        ExcelToSQLEntity excelToSQLEntity = ExcelUtils.excelToString(multipartFile);
+        aiRequestMsg.append(userGoal).append(",图表的类型是").append(chartType).append("\n").append(excelToSQLEntity.getStrCSV());
+        String chartData = aiRequestMsg.toString();
+        //将请求发给AI处理
+        DevChatRequest devChatRequest = new DevChatRequest(aiModel, chartData);
+        com.yupi.yucongming.dev.common.BaseResponse<DevChatResponse> devChatResponseBaseResponse = yuCongMingClient.doChat(devChatRequest);
+        //检查返回信息
+        ThrowUtils.throwIf(devChatResponseBaseResponse.getCode()!=0,ErrorCode.SYSTEM_ERROR,devChatResponseBaseResponse.getMessage());
+        //返回信息（去除换行符)
+        String genResult = devChatResponseBaseResponse.getData().getContent().replaceAll("\n","");
+        //封装返回对象
+        GenChartByAiResponse aiResponse = ParseChartResultUtil.getResultAndChartCode(genResult);
+
+        //新增数据到数据库
+        ChartInfo chartInfo = new ChartInfo();
+        chartInfo.setUid(loginUser.getId());
+        chartInfo.setGoal(userGoal);
+        chartInfo.setName(chartName);
+        chartInfo.setChartData(excelToSQLEntity.getStrCSV());
+        chartInfo.setChartType(chartType);
+        chartInfo.setGenResult(genResult);
+        chartInfoService.save(chartInfo);
+        //为用户生成数据库表
+//        //模拟ID
+//        chartInfo.setId(RandomUtil.randomLong(1,10000000000L));
+        userChartInfoService.createTable(excelToSQLEntity,chartInfo);
+
+        aiResponse.setId(chartInfo.getId());
+        return ResultUtils.success(aiResponse);
     }
 
     /**

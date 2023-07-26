@@ -14,12 +14,12 @@ public class GenChartByAiRequest implements Serializable {
     /**
      * 目的
      */
-    private String goal;
+    private String userGoal;
 
     /**
      * 图表名称
      */
-    private String name;
+    private String chartName;
 
     /**
      * 要生成的表格类型
