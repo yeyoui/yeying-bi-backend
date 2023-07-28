@@ -1,5 +1,7 @@
 package com.yeyou.yeyingBIbackend.utils;
 
+import com.yeyou.yeyingBIbackend.common.ErrorCode;
+import com.yeyou.yeyingBIbackend.exception.ThrowUtils;
 import com.yeyou.yeyingBIbackend.model.dto.chartInfo.GenChartByAiResponse;
 
 import java.util.stream.Stream;
@@ -8,6 +10,7 @@ public class ParseChartResultUtil {
     public static GenChartByAiResponse getResultAndChartCode(String aiResult){
         GenChartByAiResponse response=new GenChartByAiResponse();
         String[] split = aiResult.split("&&&&&");
+        ThrowUtils.throwIf(split.length<3, ErrorCode.SYSTEM_ERROR,"AI生成失败");
         response.setChartJsCode(split[1]);
         response.setGenResult(split[2]);
         return response;

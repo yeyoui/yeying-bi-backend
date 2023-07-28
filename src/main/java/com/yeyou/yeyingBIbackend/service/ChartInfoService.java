@@ -22,7 +22,8 @@ public interface ChartInfoService extends IService<ChartInfo> {
      * 获取查询条件
      *
      * @param postQueryRequest
+     * @param onlyOwn
      * @return
      */
-    QueryWrapper<ChartInfo> getQueryWrapper(ChartInfoQueryRequest postQueryRequest);
+    QueryWrapper<ChartInfo> getQueryWrapper(ChartInfoQueryRequest postQueryRequest,boolean onlyOwn);
 }

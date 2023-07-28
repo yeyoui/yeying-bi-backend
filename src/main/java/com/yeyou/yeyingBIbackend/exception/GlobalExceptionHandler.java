@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.concurrent.RejectedExecutionException;
+
 /**
  * 全局异常处理器
  *
@@ -19,6 +21,12 @@ public class GlobalExceptionHandler {
     public BaseResponse<?> businessExceptionHandler(BusinessException e) {
         log.error("BusinessException", e);
         return ResultUtils.error(e.getCode(), e.getMessage());
+    }
+
+    @ExceptionHandler(RejectedExecutionException.class)
+    public BaseResponse<?> runtimeExceptionHandler(RejectedExecutionException e) {
+        log.error("RejectedExecutionException", e);
+        return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "系统繁忙中");
     }
 
     @ExceptionHandler(RuntimeException.class)

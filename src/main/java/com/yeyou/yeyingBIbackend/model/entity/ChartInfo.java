@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.*;
 
 import java.io.Serializable;
 import java.util.Date;
+
+import com.yeyou.yeyingBIbackend.model.enums.ChartStatusEnum;
 import lombok.Data;
 
 /**
@@ -35,11 +37,6 @@ public class ChartInfo implements Serializable {
     private String name;
 
     /**
-     * 表格数据
-     */
-    private String chartData;
-
-    /**
      * 要生成的表格类型
      */
     private String chartType;
@@ -48,6 +45,16 @@ public class ChartInfo implements Serializable {
      * 生成结果
      */
     private String genResult;
+
+    /**
+     * 状态信息 0-等待中 1-正在执行 2-执行成功 3-执行失败
+     */
+    private ChartStatusEnum status;
+
+    /**
+     * 执行信息
+     */
+    private String execMessage;
 
     /**
      * 创建时间

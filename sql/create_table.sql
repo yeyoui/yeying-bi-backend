@@ -20,18 +20,20 @@ create table if not exists user
 ) comment '用户表' collate = utf8mb4_unicode_ci;
 
 -- 图表信息表
+-- todo 删除了chartData字段
 create table if not exists chart_info
 (
-    id         bigint auto_increment comment '图表id' primary key,
-    uid        bigint                             not null comment '用户ID',
-    goal       text                               null comment '目的',
-    `name`     varchar(128)                       null comment '图标名称',
-    chartData  text                               not null comment '表格数据',
-    chartType  varchar(128)                       null comment '要生成的表格类型',
-    genResult  text                               null comment '生成结果',
-    createTime datetime default CURRENT_TIMESTAMP not null comment '创建时间',
-    updateTime datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    isDelete   tinyint  default 0                 not null comment '是否删除',
+    id          bigint auto_increment comment '图表id' primary key,
+    uid         bigint                             not null comment '用户ID',
+    goal        text                               null comment '目的',
+    `name`      varchar(128)                       null comment '图标名称',
+    chartType   varchar(128)                       null comment '要生成的表格类型',
+    genResult   text                               null comment '生成结果',
+    `status`    int                                not null default 0 comment '状态信息 0-等待中 1-正在执行 2-执行成功 3-执行失败',
+    execMessage text                               null comment '执行信息',
+    createTime  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete    tinyint  default 0                 not null comment '是否删除',
     index idx_chartid (id),
     index inx_uid (uid)
 ) comment '图标信息表' collate = utf8mb4_unicode_ci;
@@ -48,7 +50,7 @@ create table user_chart_info
     fieldsName  varchar(1024)                      not null comment '表格对应的字段名称',
     `rowNum`    int comment '行数',
     `columnNum` int comment '列数',
-    parentId      bigint   default 0 comment '前一次生成的图表Id',
+    parentId    bigint   default 0 comment '前一次生成的图表Id',
     createTime  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     updateTime  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     isDelete    tinyint  default 0                 not null comment '是否删除'
