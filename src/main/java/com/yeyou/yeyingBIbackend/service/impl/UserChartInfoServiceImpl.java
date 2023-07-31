@@ -10,11 +10,12 @@ import com.yeyou.yeyingBIbackend.utils.ExcelUtils;
 import com.yeyou.yeyingBIbackend.utils.SqlUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
 * @author lhy
@@ -29,6 +30,7 @@ public class UserChartInfoServiceImpl extends ServiceImpl<UserChartInfoMapper, U
     private static String CREATE_TABLE_PREFIX = "CREATE TABLE ";
     private static String INSERT_TABLE_PREFIX = "INSERT INTO ";
     private static String USER_UPLOAD_TABLE_PREFIX="user_table_";
+    private static String SELECT_TABLE_PREFIX="SELECT * FROM ";
 
     @Override
     public void createTable(ExcelToSQLEntity excelToSQLEntity, ChartInfo chartInfo) {
@@ -79,6 +81,28 @@ public class UserChartInfoServiceImpl extends ServiceImpl<UserChartInfoMapper, U
             stringBuilder.append("(").append(StringUtils.join(value, ",")).append("),");
         }
         userChartInfoMapper.insertToUserTable(stringBuilder.substring(0,stringBuilder.length()-1));
+    }
+
+    @Override
+    public String getChartDataCSV(long chartId) {
+        //获取表头信息
+        UserChartInfo chartInfo = this.query().select("fieldsName").eq("id", chartId).one();
+        String fieldsName = chartInfo.getFieldsName();
+        StringBuilder stringBuilder = new StringBuilder(fieldsName+'\n');
+        //获取数据
+        List<HashMap<String,String>> chartMapList = userChartInfoMapper.getChartDataByTableName(USER_UPLOAD_TABLE_PREFIX + chartId);
+        //获取字段数组
+        String[] split = StringUtils.split(fieldsName, ',');
+        for (HashMap<String, String> aRow : chartMapList) {
+            StringBuilder rowBuilder = new StringBuilder();
+            for (String s : split) {
+                rowBuilder.append(String.valueOf(aRow.get(s))).append(',');
+            }
+            rowBuilder.append("\n");
+            stringBuilder.append(rowBuilder);
+        }
+        System.out.println(stringBuilder);
+        return stringBuilder.toString();
     }
 
 }

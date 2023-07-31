@@ -25,4 +25,8 @@
     <update id="createUserTable" parameterType="string">
         ${sqlStatement}
     </update>
+    <select id="getChartDataByTableName" resultType="java.util.HashMap">
+        SELECT * FROM ${tableName}
+    </select>
+
 </mapper>

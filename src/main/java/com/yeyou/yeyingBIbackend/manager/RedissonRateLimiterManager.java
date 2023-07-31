@@ -2,6 +2,7 @@ package com.yeyou.yeyingBIbackend.manager;
 
 import com.yeyou.yeyingBIbackend.common.ErrorCode;
 import com.yeyou.yeyingBIbackend.exception.BusinessException;
+import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
 import org.redisson.api.RRateLimiter;
 import org.redisson.api.RateIntervalUnit;
@@ -13,6 +14,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
 @Service
+@Slf4j
 public class RedissonRateLimiterManager {
 
     @Resource
@@ -26,12 +28,13 @@ public class RedissonRateLimiterManager {
         //根据用户ID限流
         RRateLimiter rateLimiter = redissonClient.getRateLimiter(sign);
         //一秒一次
-        rateLimiter.trySetRate(RateType.OVERALL, 1, 1, RateIntervalUnit.SECONDS);
+        rateLimiter.trySetRate(RateType.OVERALL, 1, 3, RateIntervalUnit.SECONDS);
         //尝试获取令牌
         boolean result = rateLimiter.tryAcquire(1);
         if(!result){
-//            throw new BusinessException(ErrorCode.RATE_LIMITER_ERROR);
-            System.out.println("限流！！！");
+            log.warn("用户id：{}，请求速率超过限制",sign);
+            throw new BusinessException(ErrorCode.RATE_LIMITER_ERROR);
+
         }
     }
 

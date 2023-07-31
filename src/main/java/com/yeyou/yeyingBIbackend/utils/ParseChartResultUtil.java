@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 public class ParseChartResultUtil {
     public static GenChartByAiResponse getResultAndChartCode(String aiResult){
         GenChartByAiResponse response=new GenChartByAiResponse();
+        if(aiResult==null) return response;
         String[] split = aiResult.split("&&&&&");
         ThrowUtils.throwIf(split.length<3, ErrorCode.SYSTEM_ERROR,"AI生成失败");
         response.setChartJsCode(split[1]);

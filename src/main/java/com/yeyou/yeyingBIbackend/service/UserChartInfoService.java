@@ -27,4 +27,10 @@ public interface UserChartInfoService extends IService<UserChartInfo> {
      */
     void insertToUserTable(ExcelToSQLEntity excelToSQLEntity, String tableName);
 
+    /**
+     * 获取用户图表CSV数据
+     * @param chartId
+     */
+    String getChartDataCSV(long chartId);
+
 }

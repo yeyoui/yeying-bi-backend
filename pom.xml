@@ -127,6 +127,11 @@
             <artifactId>yucongming-java-sdk</artifactId>
             <version>0.0.3</version>
         </dependency>
+        <!--消息队列Rabbitmq-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
         <!--Redisson https://github.com/redisson/redisson/tree/master/redisson-spring-boot-starter-->
 <!--        <dependency>-->
 <!--            <groupId>org.redisson</groupId>-->

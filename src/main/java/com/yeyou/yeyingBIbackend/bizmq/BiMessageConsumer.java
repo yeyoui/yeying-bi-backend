@@ -1,0 +1,86 @@
+package com.yeyou.yeyingBIbackend.bizmq;
+
+import com.rabbitmq.client.Channel;
+import com.yeyou.yeyingBIbackend.common.ErrorCode;
+import com.yeyou.yeyingBIbackend.constant.CommonConstant;
+import com.yeyou.yeyingBIbackend.constant.RedisConstant;
+import com.yeyou.yeyingBIbackend.exception.BusinessException;
+import com.yeyou.yeyingBIbackend.exception.ThrowUtils;
+import com.yeyou.yeyingBIbackend.manager.AIManager;
+import com.yeyou.yeyingBIbackend.manager.RedisOps;
+import com.yeyou.yeyingBIbackend.model.entity.ChartInfo;
+import com.yeyou.yeyingBIbackend.model.enums.ChartStatusEnum;
+import com.yeyou.yeyingBIbackend.service.ChartInfoService;
+import com.yeyou.yeyingBIbackend.service.UserChartInfoService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
+import java.io.IOException;
+
+/**
+ * 消息消费者
+ */
+@Component
+@Slf4j
+public class BiMessageConsumer {
+    @Resource
+    private ChartInfoService chartInfoService;
+    @Resource
+    private UserChartInfoService userChartInfoService;
+    @Resource
+    private AIManager aiManager;
+    @Resource
+    private RedisOps redisOps;
+
+    @RabbitListener(queues = BiMqConstant.BI_QUEUE,ackMode = "MANUAL")
+    public void receiveMessage(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag){
+        //处理任务
+        //用于更新任务状态
+        ChartInfo updateChartInfo = new ChartInfo();
+        try {
+            //获取用户上传的图表信息
+            long chartId = Long.parseLong(message);
+            ChartInfo chartInfo = chartInfoService.getById(chartId);
+            updateChartInfo.setId(chartInfo.getId());
+            //从数据库中获取表格数据
+            String chartDataCSV = userChartInfoService.getChartDataCSV(chartId);
+            //将请求发给AI处理
+            String aiRowAnswer = aiManager.doChat(CommonConstant.BI_CHART_ANALYZE_ID, chartDataCSV);
+            //返回信息（去除换行符)
+            String genResult = aiRowAnswer.replaceAll("\n","");
+            chartInfo.setGenResult(genResult);
+            //更新信息
+            boolean updateSucceed = chartInfoService.update()
+                    .set("genResult", genResult)
+                    .set("status",ChartStatusEnum.SUCCESS)
+                    .eq("id", chartInfo.getId()).update();
+            ThrowUtils.throwIf(!updateSucceed,ErrorCode.SYSTEM_ERROR,"系统更新AI结果失败");
+            //发送消息给用户
+            String responseMsg=String.format("您的表格[%s:%d]，分析成功！", chartInfo.getName(),chartInfo.getId());
+            String queueName= RedisConstant.BI_NOTIFY_UID+chartInfo.getUid();
+            redisOps.enqueue(queueName,responseMsg);
+        } catch (BusinessException ex) {
+            //设置为调用失败
+            updateChartInfo.setStatus(ChartStatusEnum.FAIL);
+            updateChartInfo.setExecMessage(ex.getMessage());
+            boolean errorSaveSucceed = chartInfoService.updateById(updateChartInfo);
+            if(!errorSaveSucceed){
+                log.error("设置保存图表错误状态：{}，出现异常，错误信息：",updateChartInfo.getId(),ex);
+            }
+        } catch (NumberFormatException e){
+            log.error("解析图表ID：{}，出现异常，错误信息：",message,e);
+        }
+        //ACK消息
+        try {
+            channel.basicAck(deliveryTag,false);
+        } catch (IOException e) {
+            log.error("消息确认失败",e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        }
+    }
+}

@@ -11,9 +11,9 @@ spring:
   # session 配置
   session:
     # todo 取消注释开启分布式 session
-    # store-type: redis
+     store-type: redis
     # 30 天过期
-    timeout: 2592000
+     timeout: 2592000
   # 数据库配置
   datasource:
     dynamic:
@@ -30,7 +30,10 @@ spring:
           url: jdbc:mysql://localhost:3306/yeying_user_upload_table
           username: root
           password: 123456
-
+  rabbitmq:
+    virtual-host: yeyou_broker
+    username: yeyoui
+    password: 109712
   # Redis 配置
   redis:
     database: 1
@@ -38,7 +41,11 @@ spring:
     port: 6379
     timeout: 5000
     password: 123456
-
+  # 日期配置
+  jackson:
+    default-property-inclusion: ALWAYS
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
   # 文件上传
   servlet:
     multipart:
@@ -55,8 +62,8 @@ server:
         max-age: 2592000
 yuapi:
   client:
-    access-key: pqpiv757eqjlgemfvv2bj8mtkb4lad5o
-    secret-key: jj34jdenp5dah032p28h3lvynmcog08e
+    access-key: xxxxxxx
+    secret-key: xxxxxx
   modelId: 1681584105285783554
 mybatis-plus:
   configuration:

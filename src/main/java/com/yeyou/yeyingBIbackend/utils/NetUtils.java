@@ -1,5 +1,9 @@
 package com.yeyou.yeyingBIbackend.utils;
 
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
 import java.net.InetAddress;
 import javax.servlet.http.HttpServletRequest;
 
@@ -48,6 +52,12 @@ public class NetUtils {
             return "127.0.0.1";
         }
         return ip;
+    }
+
+    public static HttpServletRequest getHttpServletRequest(){
+        RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
+        HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
+        return request;
     }
 
 }

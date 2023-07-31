@@ -5,12 +5,17 @@ import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.gson.Gson;
 import com.yeyou.yeyingBIbackend.annotation.AuthCheck;
+import com.yeyou.yeyingBIbackend.bizmq.BiMessageProducer;
 import com.yeyou.yeyingBIbackend.common.*;
+import com.yeyou.yeyingBIbackend.constant.CommonConstant;
 import com.yeyou.yeyingBIbackend.constant.FileConstant;
+import com.yeyou.yeyingBIbackend.constant.RedisConstant;
 import com.yeyou.yeyingBIbackend.constant.UserConstant;
 import com.yeyou.yeyingBIbackend.exception.BusinessException;
 import com.yeyou.yeyingBIbackend.exception.ThrowUtils;
 import com.yeyou.yeyingBIbackend.manager.AIManager;
+import com.yeyou.yeyingBIbackend.manager.RedisOps;
+import com.yeyou.yeyingBIbackend.manager.RedissonRateLimiterManager;
 import com.yeyou.yeyingBIbackend.model.dto.chartInfo.*;
 import com.yeyou.yeyingBIbackend.model.entity.ChartInfo;
 import com.yeyou.yeyingBIbackend.model.entity.User;
@@ -20,12 +25,14 @@ import com.yeyou.yeyingBIbackend.service.ChartInfoService;
 import com.yeyou.yeyingBIbackend.service.UserChartInfoService;
 import com.yeyou.yeyingBIbackend.service.UserService;
 import com.yeyou.yeyingBIbackend.utils.ExcelUtils;
+import com.yeyou.yeyingBIbackend.utils.NetUtils;
 import com.yeyou.yeyingBIbackend.utils.ParseChartResultUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -44,21 +51,24 @@ public class ChartController {
 
     @Resource
     private ChartInfoService chartInfoService;
-
     @Resource
     private AIManager aiManager;
-
     @Resource
     private UserChartInfoService userChartInfoService;
     @Resource
     private UserService userService;
     @Resource
     private ThreadPoolExecutor threadPoolExecutor;
-
-    @Value("${yuapi.modelId}")
-    private long aiModel;
-
-    private final static Gson GSON = new Gson();
+    @Resource
+    private BiMessageProducer biMessageProducer;
+    @Resource
+    private RedissonRateLimiterManager rateLimiterManager;
+    @Resource
+    private RedisOps redisOps;
+    /**
+     * AI模型ID
+     */
+    private static long aiModel= CommonConstant.BI_CHART_ANALYZE_ID;
 
 
     /**
@@ -250,8 +260,8 @@ public class ChartController {
         String userGoal = genChartByAiRequest.getUserGoal();
         String chartName = genChartByAiRequest.getChartName();
         String chartType = genChartByAiRequest.getChartType();
-        //todo 用户限流
-
+        //用户限流
+        rateLimiterManager.doRateLimiter(loginUser.getId().toString());
         //校验请求信息
         ThrowUtils.throwIf(userGoal==null,ErrorCode.PARAMS_ERROR,"目标为空");
         ThrowUtils.throwIf(chartName==null,ErrorCode.PARAMS_ERROR,"图表名称为空");
@@ -299,14 +309,15 @@ public class ChartController {
      * @param request
      * @return
      */
-    @PostMapping("/genChartByAiASAsync")
+    @PostMapping("/genChartByAiAS/async")
     public BaseResponse<GenChartByAiResponse> genChartByAiASAsync(@RequestPart("file") MultipartFile multipartFile, GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         //获取当前用户信息
         User loginUser = userService.getLoginUser(request);
         String userGoal = genChartByAiRequest.getUserGoal();
         String chartName = genChartByAiRequest.getChartName();
         String chartType = genChartByAiRequest.getChartType();
-        //todo 用户限流
+        //用户限流
+        rateLimiterManager.doRateLimiter(loginUser.getId().toString());
         //校验请求信息
         ThrowUtils.throwIf(userGoal==null,ErrorCode.PARAMS_ERROR,"目标为空");
         ThrowUtils.throwIf(chartName==null,ErrorCode.PARAMS_ERROR,"图表名称为空");
@@ -372,6 +383,99 @@ public class ChartController {
         GenChartByAiResponse aiResponse = new GenChartByAiResponse();
         aiResponse.setId(chartInfo.getId());
         return ResultUtils.success(aiResponse);
+    }
+
+
+    /**
+     * 分析用户上传文件（异步处理）
+     *
+     * @param multipartFile
+     * @param genChartByAiRequest 用户AI请求
+     * @param request
+     * @return
+     */
+    @PostMapping("/genChartByAiAS/async/mq")
+    public BaseResponse<GenChartByAiResponse> genChartByAiASAsyncMq(@RequestPart("file") MultipartFile multipartFile, GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+        //获取当前用户信息
+        User loginUser = userService.getLoginUser(request);
+        String userGoal = genChartByAiRequest.getUserGoal();
+        String chartName = genChartByAiRequest.getChartName();
+        String chartType = genChartByAiRequest.getChartType();
+        //用户限流
+        rateLimiterManager.doRateLimiter(loginUser.getId().toString());
+        //校验请求信息
+        ThrowUtils.throwIf(userGoal==null,ErrorCode.PARAMS_ERROR,"目标为空");
+        ThrowUtils.throwIf(chartName==null,ErrorCode.PARAMS_ERROR,"图表名称为空");
+        ThrowUtils.throwIf(chartType==null,ErrorCode.PARAMS_ERROR,"图表类型为空");
+        //校验文件信息
+        //文件不能过大
+        long size = multipartFile.getSize();
+        ThrowUtils.throwIf(size> FileConstant.MAX_EXCEL_FILE_SIZE,ErrorCode.PAYLOAD_LARGE_ERROR);
+        String originalFilename = multipartFile.getOriginalFilename();
+        String fileSuffix = FileUtil.getSuffix(originalFilename);
+        ThrowUtils.throwIf(!FileConstant.ACCEPTED_SUFFIX_LIST.contains(fileSuffix),ErrorCode.PAYLOAD_LARGE_ERROR);
+        //拼接提问信息
+        StringBuilder aiRequestMsg = new StringBuilder();
+        ExcelToSQLEntity excelToSQLEntity = ExcelUtils.excelToString(multipartFile);
+        aiRequestMsg.append(userGoal).append(",图表的类型是").append(chartType).append("\n").append(excelToSQLEntity.getStrCSV());
+
+        //新增数据到数据库（默认状态是等待中）
+        ChartInfo chartInfo = new ChartInfo();
+        chartInfo.setUid(loginUser.getId());
+        chartInfo.setGoal(userGoal);
+        chartInfo.setName(chartName);
+        chartInfo.setChartType(chartType);
+        chartInfoService.save(chartInfo);
+        //为用户生成数据库表
+        userChartInfoService.createTable(excelToSQLEntity,chartInfo);
+        //将用户请求发送到消息队列中
+        biMessageProducer.sendMsg(chartInfo.getId().toString());
+        //设置请求进入队列处理
+        boolean updateSucceed = chartInfoService.update()
+                .set("status", ChartStatusEnum.EXEC)
+                .eq("id", chartInfo.getId()).update();
+        ThrowUtils.throwIf(!updateSucceed,ErrorCode.SYSTEM_ERROR,"系统更新状态失败");
+        //返回信息
+        GenChartByAiResponse aiResponse = new GenChartByAiResponse();
+        aiResponse.setId(chartInfo.getId());
+        return ResultUtils.success(aiResponse);
+    }
+
+    @GetMapping("/genChartStatus")
+    public SseEmitter getGenChartStatus(){
+        SseEmitter emitter = new SseEmitter(0L); // 创建SseEmitter对象
+        //获取用户信息
+        User loginUser = userService.getLoginUser(NetUtils.getHttpServletRequest());
+        String queueName= RedisConstant.BI_NOTIFY_UID+loginUser.getId();
+        // 在后台线程中发送事件
+        new Thread(() -> {
+            try {
+                // 发送事件
+                while (true){
+                    String s = redisOps.dequeueBlock(queueName);
+                    if(!s.equals("null")) {
+                        emitter.send(SseEmitter.event().data(s).name("event1"));
+                    }
+                    else{
+                        //等待10秒重试
+                        Thread.sleep(10000);
+                    }
+                }
+            } catch (Exception e) {
+                emitter.completeWithError(e); // 发送出错时，完成发送
+            }finally {
+                emitter.complete();  // 完成发送
+            }
+        }).start();
+        return emitter;
+    }
+
+    @GetMapping("/put")
+    public void putSomething(String value){
+        //获取用户信息
+        User loginUser = userService.getLoginUser(NetUtils.getHttpServletRequest());
+        String queueName= RedisConstant.BI_NOTIFY_UID+loginUser.getId();
+        redisOps.enqueue(queueName,value);
     }
 
     /**

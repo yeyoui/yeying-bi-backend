@@ -3,6 +3,12 @@ package com.yeyou.yeyingBIbackend.mapper;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.yeyou.yeyingBIbackend.model.entity.UserChartInfo;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.MapKey;
+import org.redisson.misc.Hash;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
 * @author lhy
@@ -16,6 +22,8 @@ public interface UserChartInfoMapper extends BaseMapper<UserChartInfo> {
     void createUserTable(String sqlStatement);
 
     void insertToUserTable(String sqlStatement);
+
+    List<HashMap<String,String>> getChartDataByTableName(String tableName);
 
 }
 
