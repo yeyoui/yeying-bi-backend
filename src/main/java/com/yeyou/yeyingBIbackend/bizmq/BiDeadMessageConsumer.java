@@ -14,7 +14,6 @@ import com.yeyou.yeyingBIbackend.service.ChartInfoService;
 import com.yeyou.yeyingBIbackend.service.UserChartInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
@@ -23,11 +22,11 @@ import javax.annotation.Resource;
 import java.io.IOException;
 
 /**
- * 消息消费者
+ * 死信队列消费者
  */
 @Component
 @Slf4j
-public class BiMessageConsumer {
+public class BiDeadMessageConsumer {
     @Resource
     private ChartInfoService chartInfoService;
     @Resource
@@ -37,15 +36,16 @@ public class BiMessageConsumer {
     @Resource
     private RedisOps redisOps;
 
-    @RabbitListener(queues = BiMqConstant.BI_QUEUE,ackMode = "MANUAL")
+    @RabbitListener(queues = BiMqConstant.BI_DEAD_QUEUE,ackMode = "MANUAL")
     public void receiveMessage(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag){
         //处理任务
         //用于更新任务状态
         ChartInfo updateChartInfo = new ChartInfo();
+        ChartInfo chartInfo=new ChartInfo();
         try {
             //获取用户上传的图表信息
             long chartId = Long.parseLong(message);
-            ChartInfo chartInfo = chartInfoService.getById(chartId);
+            chartInfo = chartInfoService.getById(chartId);
             updateChartInfo.setId(chartInfo.getId());
             //从数据库中获取表格数据
             String chartDataCSV = userChartInfoService.getChartDataCSV(chartId);
@@ -64,18 +64,18 @@ public class BiMessageConsumer {
             String responseMsg=String.format("您的表格[%s:%d]，分析成功！", chartInfo.getName(),chartInfo.getId());
             String queueName= RedisConstant.BI_NOTIFY_UID+chartInfo.getUid();
             redisOps.enqueue(queueName,responseMsg);
-        } catch (BusinessException ex) {
-            //NACK消息
-            try {
-                //拒绝消息后进入死信队列处理
-                channel.basicNack(deliveryTag,false,false);
-            } catch (IOException e) {
-                log.error("消息确认失败",e);
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        } catch (BusinessException | NumberFormatException ex) {
+            //发送消息给用户
+            String responseMsg=String.format("您的表格[%s:%d]，分析失败！原因，%s", chartInfo.getName(),chartInfo.getId(), ex.getMessage());
+            String queueName= RedisConstant.BI_NOTIFY_UID+chartInfo.getUid();
+            redisOps.enqueue(queueName,responseMsg);
+            //设置为调用失败
+            updateChartInfo.setStatus(ChartStatusEnum.FAIL);
+            updateChartInfo.setExecMessage(ex.getMessage());
+            boolean errorSaveSucceed = chartInfoService.updateById(updateChartInfo);
+            if(!errorSaveSucceed){
+                log.error("设置保存图表错误状态：{}，出现异常，错误信息：",updateChartInfo.getId(),ex);
             }
-            return;
-        } catch (NumberFormatException e){
-            log.error("解析图表ID：{}，出现异常，错误信息：",message,e);
         }
         //ACK消息
         try {
@@ -85,4 +85,5 @@ public class BiMessageConsumer {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR);
         }
     }
+
 }

@@ -6,6 +6,9 @@ import com.yeyou.yeyingBIbackend.model.entity.ChartInfo;
 import com.yeyou.yeyingBIbackend.model.entity.UserChartInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
+import java.util.Map;
+
 /**
 * @author lhy
 * @description 针对表【user_chart_info(用户表格元数据)】的数据库操作Service
@@ -32,5 +35,12 @@ public interface UserChartInfoService extends IService<UserChartInfo> {
      * @param chartId
      */
     String getChartDataCSV(long chartId);
+
+    /**
+     * 根据图表ID获取用户图表的所有数据
+     * @param chartId
+     * @return
+     */
+    List<Map<String,String>> getChartDataByTableId(long chartId);
 
 }

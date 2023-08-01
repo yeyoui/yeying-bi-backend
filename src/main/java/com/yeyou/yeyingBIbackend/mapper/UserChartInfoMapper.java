@@ -23,7 +23,7 @@ public interface UserChartInfoMapper extends BaseMapper<UserChartInfo> {
 
     void insertToUserTable(String sqlStatement);
 
-    List<HashMap<String,String>> getChartDataByTableName(String tableName);
+    List<Map<String,String>> getChartDataByTableName(String tableName);
 
 }
 

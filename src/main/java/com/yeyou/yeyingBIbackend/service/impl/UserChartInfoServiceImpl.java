@@ -90,10 +90,10 @@ public class UserChartInfoServiceImpl extends ServiceImpl<UserChartInfoMapper, U
         String fieldsName = chartInfo.getFieldsName();
         StringBuilder stringBuilder = new StringBuilder(fieldsName+'\n');
         //获取数据
-        List<HashMap<String,String>> chartMapList = userChartInfoMapper.getChartDataByTableName(USER_UPLOAD_TABLE_PREFIX + chartId);
+        List<Map<String,String>> chartMapList = userChartInfoMapper.getChartDataByTableName(USER_UPLOAD_TABLE_PREFIX + chartId);
         //获取字段数组
         String[] split = StringUtils.split(fieldsName, ',');
-        for (HashMap<String, String> aRow : chartMapList) {
+        for (Map<String, String> aRow : chartMapList) {
             StringBuilder rowBuilder = new StringBuilder();
             for (String s : split) {
                 rowBuilder.append(String.valueOf(aRow.get(s))).append(',');
@@ -103,6 +103,13 @@ public class UserChartInfoServiceImpl extends ServiceImpl<UserChartInfoMapper, U
         }
         System.out.println(stringBuilder);
         return stringBuilder.toString();
+    }
+
+    @Override
+    public List<Map<String, String>> getChartDataByTableId(long chartId) {
+        List<Map<String,String>> chartMapList = userChartInfoMapper.
+                getChartDataByTableName(USER_UPLOAD_TABLE_PREFIX + chartId);
+        return chartMapList;
     }
 
 }
