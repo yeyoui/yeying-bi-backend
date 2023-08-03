@@ -28,7 +28,7 @@ public class BiMqInit {
             Channel channel = connection.createChannel();
 
             //声明死信交换机
-            channel.exchangeDeclare(BiMqConstant.BI_DEAD_EXCHANGE, RabbitmqConstant.DIRECT);
+            channel.exchangeDeclare(BiMqConstant.BI_DEAD_EXCHANGE, RabbitmqConstant.DIRECT,true,false,null);
             //声明死信队列
             channel.queueDeclare(BiMqConstant.BI_DEAD_QUEUE, true, false, false, null);
             //死信队列绑定死信交换机
@@ -36,7 +36,7 @@ public class BiMqInit {
 
             //声明交换机
             String BI_EXCHANGE = BiMqConstant.BI_EXCHANGE;
-            channel.exchangeDeclare(BI_EXCHANGE, RabbitmqConstant.DIRECT);
+            channel.exchangeDeclare(BI_EXCHANGE, RabbitmqConstant.DIRECT,true,false,null);
             // 创建用于指定死信队列的参数的Map对象
             Map<String, Object> deadArgs = new HashMap<>();
             deadArgs.put("x-dead-letter-exchange", BiMqConstant.BI_DEAD_EXCHANGE);

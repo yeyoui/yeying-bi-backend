@@ -22,11 +22,12 @@ public class RedissonRateLimiterManager {
 
     /**
      * 通过Redisson实现限流
-     * @param sign 限流的标识
+     * @param sign 限流的标识 一般为ID
      */
     public void doRateLimiter(String sign){
+        String key = "limit:user:";
         //根据用户ID限流
-        RRateLimiter rateLimiter = redissonClient.getRateLimiter(sign);
+        RRateLimiter rateLimiter = redissonClient.getRateLimiter(key+sign);
         //一秒一次
         rateLimiter.trySetRate(RateType.OVERALL, 1, 3, RateIntervalUnit.SECONDS);
         //尝试获取令牌

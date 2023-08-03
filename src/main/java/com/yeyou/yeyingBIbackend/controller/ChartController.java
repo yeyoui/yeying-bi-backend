@@ -29,7 +29,6 @@ import com.yeyou.yeyingBIbackend.utils.NetUtils;
 import com.yeyou.yeyingBIbackend.utils.ParseChartResultUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -470,12 +469,24 @@ public class ChartController {
         return emitter;
     }
 
-    @GetMapping("/put")
-    public void putSomething(String value){
-        //获取用户信息
+    /**
+     * 重试图表生成
+     * @param chartId 图表ID
+     */
+    @GetMapping("/reSubmitChart")
+    public BaseResponse reSubmitChart(Long chartId){
+        //用户限流
         User loginUser = userService.getLoginUser(NetUtils.getHttpServletRequest());
-        String queueName= RedisConstant.BI_NOTIFY_UID+loginUser.getId();
-        redisOps.enqueue(queueName,value);
+        rateLimiterManager.doRateLimiter(loginUser.getId().toString());
+        //todo 权限校验
+
+        //更新图表状态
+        ChartInfo chartInfo = new ChartInfo();
+        chartInfo.setId(chartId);
+        chartInfo.setStatus(ChartStatusEnum.EXEC);
+        //直接放入消息队列
+        biMessageProducer.sendMsg(chartId.toString());
+        return ResultUtils.success("加入队列成功");
     }
 
     /**

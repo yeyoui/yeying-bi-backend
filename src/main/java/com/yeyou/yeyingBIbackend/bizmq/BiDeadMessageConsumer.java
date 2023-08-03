@@ -40,12 +40,14 @@ public class BiDeadMessageConsumer {
     public void receiveMessage(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag){
         //处理任务
         //用于更新任务状态
-        ChartInfo updateChartInfo = new ChartInfo();
-        ChartInfo chartInfo=new ChartInfo();
+        ChartInfo updateChartInfo=new ChartInfo();
+        ChartInfo chartInfo = null;
         try {
             //获取用户上传的图表信息
             long chartId = Long.parseLong(message);
             chartInfo = chartInfoService.getById(chartId);
+            //图表必须存在
+            ThrowUtils.throwIf(chartInfo.getId()==null,ErrorCode.PARAMS_ERROR);
             updateChartInfo.setId(chartInfo.getId());
             //从数据库中获取表格数据
             String chartDataCSV = userChartInfoService.getChartDataCSV(chartId);
@@ -54,17 +56,26 @@ public class BiDeadMessageConsumer {
             //返回信息（去除换行符)
             String genResult = aiRowAnswer.replaceAll("\n","");
             chartInfo.setGenResult(genResult);
-            //更新信息
-            boolean updateSucceed = chartInfoService.update()
-                    .set("genResult", genResult)
-                    .set("status",ChartStatusEnum.SUCCESS)
-                    .eq("id", chartInfo.getId()).update();
-            ThrowUtils.throwIf(!updateSucceed,ErrorCode.SYSTEM_ERROR,"系统更新AI结果失败");
-            //发送消息给用户
-            String responseMsg=String.format("您的表格[%s:%d]，分析成功！", chartInfo.getName(),chartInfo.getId());
-            String queueName= RedisConstant.BI_NOTIFY_UID+chartInfo.getUid();
-            redisOps.enqueue(queueName,responseMsg);
+            //检查任务是否已经完成（防止重复消费）
+            ChartStatusEnum status = chartInfoService.query().select("status").eq("id", chartId).one().getStatus();
+            if(!ChartStatusEnum.SUCCESS.equals(status)){
+                //更新信息
+                boolean updateSucceed = chartInfoService.update()
+                        .set("genResult", genResult)
+                        .set("status",ChartStatusEnum.SUCCESS)
+                        .set("execMessage",null)
+                        .eq("id", chartInfo.getId()).update();
+                ThrowUtils.throwIf(!updateSucceed,ErrorCode.SYSTEM_ERROR,"系统更新AI结果失败");
+                //发送消息给用户
+                String responseMsg=String.format("您的表格[%s:%d]，分析成功！", chartInfo.getName(),chartInfo.getId());
+                String queueName= RedisConstant.BI_NOTIFY_UID+chartInfo.getUid();
+                redisOps.enqueue(queueName,responseMsg);
+            }
         } catch (BusinessException | NumberFormatException ex) {
+            if(chartInfo==null){
+                log.error("获取图表失败");
+                return;
+            }
             //发送消息给用户
             String responseMsg=String.format("您的表格[%s:%d]，分析失败！原因，%s", chartInfo.getName(),chartInfo.getId(), ex.getMessage());
             String queueName= RedisConstant.BI_NOTIFY_UID+chartInfo.getUid();
@@ -85,5 +96,4 @@ public class BiDeadMessageConsumer {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR);
         }
     }
-
 }
