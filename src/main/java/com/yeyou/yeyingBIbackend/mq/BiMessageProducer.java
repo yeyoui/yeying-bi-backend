@@ -1,4 +1,4 @@
-package com.yeyou.yeyingBIbackend.bizmq;
+package com.yeyou.yeyingBIbackend.mq;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;

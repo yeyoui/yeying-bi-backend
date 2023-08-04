@@ -1,4 +1,4 @@
-package com.yeyou.yeyingBIbackend.bizmq;
+package com.yeyou.yeyingBIbackend.mq;
 
 import com.rabbitmq.client.Channel;
 import com.yeyou.yeyingBIbackend.common.ErrorCode;

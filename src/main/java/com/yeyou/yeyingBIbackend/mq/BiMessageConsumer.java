@@ -1,4 +1,4 @@
-package com.yeyou.yeyingBIbackend.bizmq;
+package com.yeyou.yeyingBIbackend.mq;
 
 import com.github.rholder.retry.*;
 import com.rabbitmq.client.Channel;
@@ -15,17 +15,14 @@ import com.yeyou.yeyingBIbackend.service.ChartInfoService;
 import com.yeyou.yeyingBIbackend.service.UserChartInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * 消息消费者

@@ -2,17 +2,16 @@ package com.yeyou.yeyingBIbackend.model.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 
-public enum ChartStatusEnum {
-
-    WAIT(0),
-    EXEC(1),
-    SUCCESS(2),
-    FAIL(3);
-
+/**
+ * 订单类型的枚举
+ */
+public enum OrderTypeEnum {
+    NORMAL(0),
+    COUPON(1);
     @EnumValue
-    private final int code;
+    private final Integer code;
 
-    ChartStatusEnum(int code) {
+    OrderTypeEnum(Integer code) {
         this.code = code;
     }
 

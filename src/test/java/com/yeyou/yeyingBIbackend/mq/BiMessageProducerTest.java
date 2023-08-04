@@ -1,4 +1,4 @@
-package com.yeyou.yeyingBIbackend.bizmq;
+package com.yeyou.yeyingBIbackend.mq;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

@@ -1,11 +1,9 @@
 package com.yeyou.yeyingBIbackend.controller;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.google.gson.Gson;
 import com.yeyou.yeyingBIbackend.annotation.AuthCheck;
-import com.yeyou.yeyingBIbackend.bizmq.BiMessageProducer;
+import com.yeyou.yeyingBIbackend.mq.BiMessageProducer;
 import com.yeyou.yeyingBIbackend.common.*;
 import com.yeyou.yeyingBIbackend.constant.CommonConstant;
 import com.yeyou.yeyingBIbackend.constant.FileConstant;
@@ -36,7 +34,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -292,6 +289,7 @@ public class ChartController {
         chartInfo.setName(chartName);
         chartInfo.setChartType(chartType);
         chartInfo.setGenResult(genResult);
+        chartInfo.setStatus(ChartStatusEnum.SUCCESS);
         chartInfoService.save(chartInfo);
         //为用户生成数据库表
         userChartInfoService.createTable(excelToSQLEntity,chartInfo);
@@ -300,93 +298,93 @@ public class ChartController {
         return ResultUtils.success(aiResponse);
     }
 
+//    /**
+//     * 分析用户上传文件（异步处理）
+//     *
+//     * @param multipartFile
+//     * @param genChartByAiRequest 用户AI请求
+//     * @param request
+//     * @return
+//     */
+//    @PostMapping("/genChartByAiAS/async")
+//    public BaseResponse<GenChartByAiResponse> genChartByAiASAsync(@RequestPart("file") MultipartFile multipartFile, GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+//        //获取当前用户信息
+//        User loginUser = userService.getLoginUser(request);
+//        String userGoal = genChartByAiRequest.getUserGoal();
+//        String chartName = genChartByAiRequest.getChartName();
+//        String chartType = genChartByAiRequest.getChartType();
+//        //用户限流
+//        rateLimiterManager.doRateLimiter(loginUser.getId().toString());
+//        //校验请求信息
+//        ThrowUtils.throwIf(userGoal==null,ErrorCode.PARAMS_ERROR,"目标为空");
+//        ThrowUtils.throwIf(chartName==null,ErrorCode.PARAMS_ERROR,"图表名称为空");
+//        ThrowUtils.throwIf(chartType==null,ErrorCode.PARAMS_ERROR,"图表类型为空");
+//        //校验文件信息
+//        //文件不能过大
+//        long size = multipartFile.getSize();
+//        ThrowUtils.throwIf(size> FileConstant.MAX_EXCEL_FILE_SIZE,ErrorCode.PAYLOAD_LARGE_ERROR);
+//        String originalFilename = multipartFile.getOriginalFilename();
+//        String fileSuffix = FileUtil.getSuffix(originalFilename);
+//        ThrowUtils.throwIf(!FileConstant.ACCEPTED_SUFFIX_LIST.contains(fileSuffix),ErrorCode.PAYLOAD_LARGE_ERROR);
+//        //拼接提问信息
+//        StringBuilder aiRequestMsg = new StringBuilder();
+//        ExcelToSQLEntity excelToSQLEntity = ExcelUtils.excelToString(multipartFile);
+//        aiRequestMsg.append(userGoal).append(",图表的类型是").append(chartType).append("\n").append(excelToSQLEntity.getStrCSV());
+//        String chartData = aiRequestMsg.toString();
+//
+//        //新增数据到数据库（默认状态是等待中）
+//        ChartInfo chartInfo = new ChartInfo();
+//        chartInfo.setUid(loginUser.getId());
+//        chartInfo.setGoal(userGoal);
+//        chartInfo.setName(chartName);
+//        chartInfo.setChartType(chartType);
+//        chartInfoService.save(chartInfo);
+//        //为用户生成数据库表
+//        userChartInfoService.createTable(excelToSQLEntity,chartInfo);
+//        //用于更新任务状态
+//        ChartInfo updateChartInfo = new ChartInfo();
+//        updateChartInfo.setId(chartInfo.getId());
+//        //todo 异步处理
+//        try {
+//            CompletableFuture.runAsync(()->{
+//                //设置请求进入队列处理
+//                boolean updateSucceed = chartInfoService.update()
+//                        .set("status",ChartStatusEnum.EXEC)
+//                        .eq("id", chartInfo.getId()).update();
+//                ThrowUtils.throwIf(!updateSucceed,ErrorCode.SYSTEM_ERROR,"系统更新状态失败");
+//                //将请求发给AI处理
+//                String aiRowAnswer = aiManager.doChat(aiModel, chartData);
+//                //返回信息（去除换行符)
+//                String genResult = aiRowAnswer.replaceAll("\n","");
+////                //封装返回对象
+////                GenChartByAiResponse aiResponse = ParseChartResultUtil.getResultAndChartCode(genResult);
+////                aiResponse.setId(chartInfo.getId());
+//                chartInfo.setGenResult(genResult);
+//                //更新信息
+//                updateSucceed = chartInfoService.update()
+//                        .set("genResult", genResult)
+//                        .set("status",ChartStatusEnum.SUCCESS)
+//                        .eq("id", chartInfo.getId()).update();
+//                ThrowUtils.throwIf(!updateSucceed,ErrorCode.SYSTEM_ERROR,"系统更新AI结果失败");
+//            },threadPoolExecutor);
+//        } catch (BusinessException ex){
+//            //设置为调用失败
+//            //todo 后续加入定时任务重试
+//            updateChartInfo.setStatus(ChartStatusEnum.FAIL);
+//            updateChartInfo.setExecMessage(ex.getMessage());
+//            boolean errorSaveSucceed = chartInfoService.updateById(updateChartInfo);
+//            if(!errorSaveSucceed){
+//                log.error("设置保存图表错误状态：{}，出现异常，错误信息：",updateChartInfo.getId(),ex);
+//            }
+//        }
+//        GenChartByAiResponse aiResponse = new GenChartByAiResponse();
+//        aiResponse.setId(chartInfo.getId());
+//        return ResultUtils.success(aiResponse);
+//    }
+
+
     /**
-     * 分析用户上传文件（异步处理）
-     *
-     * @param multipartFile
-     * @param genChartByAiRequest 用户AI请求
-     * @param request
-     * @return
-     */
-    @PostMapping("/genChartByAiAS/async")
-    public BaseResponse<GenChartByAiResponse> genChartByAiASAsync(@RequestPart("file") MultipartFile multipartFile, GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
-        //获取当前用户信息
-        User loginUser = userService.getLoginUser(request);
-        String userGoal = genChartByAiRequest.getUserGoal();
-        String chartName = genChartByAiRequest.getChartName();
-        String chartType = genChartByAiRequest.getChartType();
-        //用户限流
-        rateLimiterManager.doRateLimiter(loginUser.getId().toString());
-        //校验请求信息
-        ThrowUtils.throwIf(userGoal==null,ErrorCode.PARAMS_ERROR,"目标为空");
-        ThrowUtils.throwIf(chartName==null,ErrorCode.PARAMS_ERROR,"图表名称为空");
-        ThrowUtils.throwIf(chartType==null,ErrorCode.PARAMS_ERROR,"图表类型为空");
-        //校验文件信息
-        //文件不能过大
-        long size = multipartFile.getSize();
-        ThrowUtils.throwIf(size> FileConstant.MAX_EXCEL_FILE_SIZE,ErrorCode.PAYLOAD_LARGE_ERROR);
-        String originalFilename = multipartFile.getOriginalFilename();
-        String fileSuffix = FileUtil.getSuffix(originalFilename);
-        ThrowUtils.throwIf(!FileConstant.ACCEPTED_SUFFIX_LIST.contains(fileSuffix),ErrorCode.PAYLOAD_LARGE_ERROR);
-        //拼接提问信息
-        StringBuilder aiRequestMsg = new StringBuilder();
-        ExcelToSQLEntity excelToSQLEntity = ExcelUtils.excelToString(multipartFile);
-        aiRequestMsg.append(userGoal).append(",图表的类型是").append(chartType).append("\n").append(excelToSQLEntity.getStrCSV());
-        String chartData = aiRequestMsg.toString();
-
-        //新增数据到数据库（默认状态是等待中）
-        ChartInfo chartInfo = new ChartInfo();
-        chartInfo.setUid(loginUser.getId());
-        chartInfo.setGoal(userGoal);
-        chartInfo.setName(chartName);
-        chartInfo.setChartType(chartType);
-        chartInfoService.save(chartInfo);
-        //为用户生成数据库表
-        userChartInfoService.createTable(excelToSQLEntity,chartInfo);
-        //用于更新任务状态
-        ChartInfo updateChartInfo = new ChartInfo();
-        updateChartInfo.setId(chartInfo.getId());
-        //todo 异步处理
-        try {
-            CompletableFuture.runAsync(()->{
-                //设置请求进入队列处理
-                boolean updateSucceed = chartInfoService.update()
-                        .set("status",ChartStatusEnum.EXEC)
-                        .eq("id", chartInfo.getId()).update();
-                ThrowUtils.throwIf(!updateSucceed,ErrorCode.SYSTEM_ERROR,"系统更新状态失败");
-                //将请求发给AI处理
-                String aiRowAnswer = aiManager.doChat(aiModel, chartData);
-                //返回信息（去除换行符)
-                String genResult = aiRowAnswer.replaceAll("\n","");
-//                //封装返回对象
-//                GenChartByAiResponse aiResponse = ParseChartResultUtil.getResultAndChartCode(genResult);
-//                aiResponse.setId(chartInfo.getId());
-                chartInfo.setGenResult(genResult);
-                //更新信息
-                updateSucceed = chartInfoService.update()
-                        .set("genResult", genResult)
-                        .set("status",ChartStatusEnum.SUCCESS)
-                        .eq("id", chartInfo.getId()).update();
-                ThrowUtils.throwIf(!updateSucceed,ErrorCode.SYSTEM_ERROR,"系统更新AI结果失败");
-            },threadPoolExecutor);
-        } catch (BusinessException ex){
-            //设置为调用失败
-            //todo 后续加入定时任务重试
-            updateChartInfo.setStatus(ChartStatusEnum.FAIL);
-            updateChartInfo.setExecMessage(ex.getMessage());
-            boolean errorSaveSucceed = chartInfoService.updateById(updateChartInfo);
-            if(!errorSaveSucceed){
-                log.error("设置保存图表错误状态：{}，出现异常，错误信息：",updateChartInfo.getId(),ex);
-            }
-        }
-        GenChartByAiResponse aiResponse = new GenChartByAiResponse();
-        aiResponse.setId(chartInfo.getId());
-        return ResultUtils.success(aiResponse);
-    }
-
-
-    /**
-     * 分析用户上传文件（异步处理）
+     * 分析用户上传文件（异步MQ处理）
      *
      * @param multipartFile
      * @param genChartByAiRequest 用户AI请求
@@ -428,6 +426,7 @@ public class ChartController {
         //为用户生成数据库表
         userChartInfoService.createTable(excelToSQLEntity,chartInfo);
         //将用户请求发送到消息队列中
+        //todo 加入发送确认机制
         biMessageProducer.sendMsg(chartInfo.getId().toString());
         //设置请求进入队列处理
         boolean updateSucceed = chartInfoService.update()

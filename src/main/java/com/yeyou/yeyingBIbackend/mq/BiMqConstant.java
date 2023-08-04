@@ -1,4 +1,4 @@
-package com.yeyou.yeyingBIbackend.bizmq;
+package com.yeyou.yeyingBIbackend.mq;
 
 public interface BiMqConstant {
     String BI_EXCHANGE = "bi_exchange";
