@@ -14,7 +14,7 @@ import com.yeyou.yeyingBIbackend.exception.BusinessException;
 import com.yeyou.yeyingBIbackend.model.entity.OrderRecord;
 import com.yeyou.yeyingBIbackend.model.enums.OrderStatusEnum;
 import com.yeyou.yeyingBIbackend.service.OrderRecordService;
-import com.yeyou.yeyingBIbackend.utils.QRCodeUtil;
+import com.yeyou.yeyingBIbackend.service.UserInterfaceInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -28,8 +28,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.alipay.api.AlipayConstants.SIGN_TYPE;
 import static com.yeyou.yeyingBIbackend.config.AlipayConfig.CHARSET;
@@ -44,7 +42,8 @@ public class PaymentController {
 
     @Resource
     private OrderRecordService orderRecordService;
-
+    @Resource
+    private UserInterfaceInfoService userInterfaceInfoService;
     @Value("${pay.alipay.APP_ID}")
     String APP_ID;
     @Value("${pay.alipay.APP_PRIVATE_KEY}")
@@ -53,6 +52,8 @@ public class PaymentController {
     String ALIPAY_PUBLIC_KEY;
     @Value("${pay.alipay.ALPAY_QR_ADDR}")
     String ALPAY_QR_ADDR;
+    @Value("${yeying.SERVER_HOST}")
+    private String SERVER_HOST;
 
     @GetMapping("/getPaymentView")
     public void getPaymentView(@RequestParam("orderRecordId") Long orderRecordId,HttpServletResponse httpResponse) {
@@ -84,8 +85,8 @@ public class PaymentController {
                 AlipayConfig.FORMAT, CHARSET, ALIPAY_PUBLIC_KEY, AlipayConfig.SIGNTYPE);
         AlipayTradeWapPayRequest request = new AlipayTradeWapPayRequest();
         //异步接收地址，仅支持http/https，公网可访问
-        request.setReturnUrl("https://e9ea-112-5-108-31.ngrok-free.app/api/payment/getPaymentQR");
-        request.setNotifyUrl("https://e9ea-112-5-108-31.ngrok-free.app/api/payment/paymentResult");//在公共参数中设置回跳和通知地址
+        request.setReturnUrl(SERVER_HOST+"/api/payment/getPaymentQR");
+        request.setNotifyUrl(SERVER_HOST+"/api/payment/paymentResult");//在公共参数中设置回跳和通知地址
         //同步跳转地址，仅支持http/https
         /******必传参数******/
         JSONObject bizContent = new JSONObject();
@@ -99,9 +100,9 @@ public class PaymentController {
         bizContent.put("subject", orderRecord.getOrderName());
 
         //跳转信息
-        bizContent.put("return_url", "https://e9ea-112-5-108-31.ngrok-free.app/api/payment/getPaymentQR");
+        bizContent.put("return_url", SERVER_HOST+"/api/payment/getPaymentQR");
         //退出支付
-        bizContent.put("quit_url", "https://e9ea-112-5-108-31.ngrok-free.app/api/payment/getPaymentQR");
+        bizContent.put("quit_url", SERVER_HOST+"/api/payment/getPaymentQR");
 
         /******可选参数******/
         //手机网站支付默认传值FAST_INSTANT_TRADE_PAY
@@ -209,6 +210,9 @@ public class PaymentController {
     public void paymentResult(HttpServletRequest request, HttpServletResponse response) {
         Map<String, String> paramsMap=new HashMap<>();
         Map<String, String[]> requestParameterMap = request.getParameterMap();
+        //订单ID字符串
+        String out_trade_no="null";
+        //获取参数
         for (Map.Entry<String, String[]> paramEntry : requestParameterMap.entrySet()) {
             String key = paramEntry.getKey();
             String[] values = paramEntry.getValue();
@@ -228,7 +232,7 @@ public class PaymentController {
         if (signVerified) {
             // TODO 验签成功后，按照支付结果异步通知中的描述，对支付结果中的业务内容进行二次校验，校验成功后在response中返回success并继续商户自身业务处理，校验失败返回failure
             //商户订单号
-            String out_trade_no = paramsMap.get("out_trade_no");
+            out_trade_no = paramsMap.get("out_trade_no");
             //支付宝交易号
             String trade_no = paramsMap.get("trade_no");
             //交易状态
@@ -244,13 +248,39 @@ public class PaymentController {
                         .set("outPayNo",trade_no)
                         .set("paySuccessTime",notify_time)
                         .eq("id",out_trade_no).update();
+                //查询订单信息
+                OrderRecord orderRecord = orderRecordService.getById(out_trade_no);
+                //新增用户的调用数
+                userInterfaceInfoService.updateAllocationInvokeNum(orderRecord.getInterfaceId(),
+                        orderRecord.getUserId(),orderRecord.getTotalNum());
+                //支付成功
+                try {
+                    response.getWriter().print("success");
+                    response.getWriter().close();
+                } catch (IOException e) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "在返回给支付宝的消息时出现错误,订单ID:"+out_trade_no);
+                }
             }else {
+                //支付失败
                 orderRecordService.update().set("status", OrderStatusEnum.FAILURE).eq("id",out_trade_no).update();
+                log.warn("订单{}，处理错误，订单未支付",out_trade_no);
+                try {
+                    response.getWriter().print("failure");
+                    response.getWriter().close();
+                } catch (IOException e) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "在返回给支付宝的消息时出现错误,订单ID:"+out_trade_no);
+                }
             }
         } else {
         // TODO 验签失败则记录异常日志，并在response中返回failure.
-            System.out.println(paramsMap);
+            log.error("订单{}，处理错误，订单验证失败",out_trade_no);
+            try {
+                response.getWriter().print("failure");
+                response.getWriter().close();
+            } catch (IOException e) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "在返回给支付宝的消息时出现错误,订单ID:"+out_trade_no);
+            }
         }
-
     }
+
 }

@@ -427,7 +427,7 @@ public class ChartController {
         userChartInfoService.createTable(excelToSQLEntity,chartInfo);
         //将用户请求发送到消息队列中
         //todo 加入发送确认机制
-        biMessageProducer.sendMsg(chartInfo.getId().toString());
+        biMessageProducer.sendMsgToBI(chartInfo.getId().toString());
         //设置请求进入队列处理
         boolean updateSucceed = chartInfoService.update()
                 .set("status", ChartStatusEnum.EXEC)
@@ -484,7 +484,7 @@ public class ChartController {
         chartInfo.setId(chartId);
         chartInfo.setStatus(ChartStatusEnum.EXEC);
         //直接放入消息队列
-        biMessageProducer.sendMsg(chartId.toString());
+        biMessageProducer.sendMsgToBI(chartId.toString());
         return ResultUtils.success("加入队列成功");
     }
 

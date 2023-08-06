@@ -15,6 +15,7 @@ import com.yeyou.yeyingBIbackend.model.dto.userInterfaceInfo.OrderRecordQueryReq
 import com.yeyou.yeyingBIbackend.model.dto.userInterfaceInfo.OrderRecordUpdateRequest;
 import com.yeyou.yeyingBIbackend.model.entity.User;
 import com.yeyou.yeyingBIbackend.model.entity.OrderRecord;
+import com.yeyou.yeyingBIbackend.mq.BiMessageProducer;
 import com.yeyou.yeyingBIbackend.service.OrderRecordService;
 import com.yeyou.yeyingBIbackend.service.UserService;
 import com.yeyou.yeyingBIbackend.utils.NetUtils;
@@ -41,6 +42,8 @@ public class OrderRecordController {
     private OrderRecordService orderRecordService;
     @Resource
     private UserService userService;
+    @Resource
+    private BiMessageProducer biMessageProducer;
 
     /**
      * 创建
@@ -203,6 +206,8 @@ public class OrderRecordController {
         long orderRecordId = orderRecordService.createOrder(orderRecord);
         //生成下单二维码
         String paymentQR = orderRecordService.getPaymentQR(orderRecordId);
+        //订单15分钟自动取消
+        biMessageProducer.sendMsgToDelayOrder(String.valueOf(orderRecordId));
         return ResultUtils.success(paymentQR);
     }
 }

@@ -18,7 +18,15 @@ public class BiMessageProducer {
      * 生产者发送消息
      * @param message 消息
      */
-    public void sendMsg(String message){
-        rabbitTemplate.convertAndSend(BiMqConstant.BI_EXCHANGE, BiMqConstant.BI_ROUTING_KEY, message);
+    public void sendMsgToBI(String message){
+        sendMeg(BiMqConstant.BI_EXCHANGE, BiMqConstant.BI_ROUTING_KEY, message);
+    }
+
+    public void sendMsgToDelayOrder(String message){
+        sendMeg(BiMqConstant.ORDER_DELAY_EXCHANGE, BiMqConstant.ORDER_DELAY_ROUTING_KEY, message);
+    }
+
+    public void sendMeg(String exchangeName,String routingKey,String message){
+        rabbitTemplate.convertAndSend(exchangeName, routingKey, message);
     }
 }

@@ -77,6 +77,7 @@ public class OrderRecordServiceImpl extends ServiceImpl<OrderRecordMapper, Order
         //校验参数是否正确
         this.validOrderRecord(orderRecord, true);
         ArrayList<Pair<Long, Integer>> interfaceInfos = new ArrayList<>();
+        //todo 目前只有一个接口
         interfaceInfos.add(new Pair<>(BI_INTERFACE_ID, orderRecord.getTotalNum()));
         //计算总价
         long totalPrice = this.calculatePrice(interfaceInfos);

@@ -11,6 +11,6 @@ class BiMessageProducerTest {
     private BiMessageProducer biMessageProducer;
     @Test
     void sendMsg() {
-        biMessageProducer.sendMsg("你好");
+        biMessageProducer.sendMsgToBI("你好");
     }
 }

@@ -1,6 +1,7 @@
 package com.yeyou.yeyingBIbackend.controller;
 
 import cn.hutool.json.JSONUtil;
+import com.yeyou.yeyingBIbackend.mq.BiMessageProducer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class QueueController {
     @Resource
     private ThreadPoolExecutor threadPoolExecutor;
+    @Resource
+    private BiMessageProducer biMessageProducer;
 
     @GetMapping("/add")
     public void addTaskToThreadPool(String name) {
@@ -45,5 +48,11 @@ public class QueueController {
         int activeCount = threadPoolExecutor.getActiveCount();
         map.put("正在工作的线程数", activeCount);
         return JSONUtil.toJsonStr(map);
+    }
+
+    @GetMapping("/sendOrderMsg")
+    public String sendMessageToOrderExchange(String msg){
+        biMessageProducer.sendMsgToDelayOrder(msg);
+        return "发送成功";
     }
 }

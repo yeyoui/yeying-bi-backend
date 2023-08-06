@@ -9,8 +9,11 @@ import com.yeyou.yeyingBIbackend.exception.ThrowUtils;
 import com.yeyou.yeyingBIbackend.manager.AIManager;
 import com.yeyou.yeyingBIbackend.manager.RedisOps;
 import com.yeyou.yeyingBIbackend.model.entity.ChartInfo;
+import com.yeyou.yeyingBIbackend.model.entity.OrderRecord;
 import com.yeyou.yeyingBIbackend.model.enums.ChartStatusEnum;
+import com.yeyou.yeyingBIbackend.model.enums.OrderStatusEnum;
 import com.yeyou.yeyingBIbackend.service.ChartInfoService;
+import com.yeyou.yeyingBIbackend.service.OrderRecordService;
 import com.yeyou.yeyingBIbackend.service.UserChartInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -31,6 +34,8 @@ public class BiDeadMessageConsumer {
     private ChartInfoService chartInfoService;
     @Resource
     private UserChartInfoService userChartInfoService;
+    @Resource
+    private OrderRecordService orderRecordService;
     @Resource
     private AIManager aiManager;
     @Resource
@@ -88,6 +93,36 @@ public class BiDeadMessageConsumer {
                 log.error("设置保存图表错误状态：{}，出现异常，错误信息：",updateChartInfo.getId(),ex);
             }
         }
+        //ACK消息
+        ackCurMessage(channel, deliveryTag);
+    }
+
+    @RabbitListener(queues = BiMqConstant.ORDER_DEAD_QUEUE,ackMode = "MANUAL")
+    public void receiveOrderFailMessage(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag){
+        //获取订单ID
+        long orderId = Long.parseLong(message);
+        //查询订单ID
+        try {
+            OrderRecord orderRecord = orderRecordService.getById(orderId);
+            if(orderRecord==null){
+                ThrowUtils.throwIf(true,ErrorCode.SYSTEM_ERROR,"从消息队列获取订单失败,订单ID:"+message);
+            }
+            //如果订单状态是未支付则将订单设置为失败
+            if (OrderStatusEnum.UNPAID.equals(orderRecord.getStatus())) {
+                boolean succeed = orderRecordService
+                        .update().set("status", OrderStatusEnum.FAILURE)
+                        .eq("id",orderId)
+                        .update();
+                ThrowUtils.throwIf(!succeed,ErrorCode.SYSTEM_ERROR,"更新订单状态失败");
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        } finally {
+            ackCurMessage(channel, deliveryTag);
+        }
+    }
+
+    private static void ackCurMessage(Channel channel, long deliveryTag) {
         //ACK消息
         try {
             channel.basicAck(deliveryTag,false);

@@ -46,6 +46,28 @@ public class BiMqInit {
             channel.queueDeclare(BI_QUEUE, true, false, false, deadArgs);
             //绑定
             channel.queueBind(BI_QUEUE, BI_EXCHANGE, BiMqConstant.BI_ROUTING_KEY);
+
+            //声明死信交换机
+            channel.exchangeDeclare(BiMqConstant.ORDER_DEAD_EXCHANGE, RabbitmqConstant.DIRECT,true,false,null);
+            //声明死信队列
+            channel.queueDeclare(BiMqConstant.ORDER_DEAD_QUEUE, true, false, false, null);
+            //死信队列绑定死信交换机
+            channel.queueBind(BiMqConstant.ORDER_DEAD_QUEUE, BiMqConstant.ORDER_DEAD_EXCHANGE, BiMqConstant.ORDER_FAIL_ROUTING_KEY);
+
+            //声明交换机
+            channel.exchangeDeclare(BiMqConstant.ORDER_DELAY_EXCHANGE, RabbitmqConstant.DIRECT,true,false,null);
+            // 创建用于指定死信队列的参数的Map对象
+            //设置Order延迟队列TTL
+            Map<String, Object> orderDelayArgs = new HashMap<>();
+            //TTL60秒
+            orderDelayArgs.put("x-message-ttl", 30000);
+            //设置死信交换机和key
+            orderDelayArgs.put("x-dead-letter-exchange", BiMqConstant.ORDER_DEAD_EXCHANGE);
+            orderDelayArgs.put("x-dead-letter-routing-key", BiMqConstant.ORDER_FAIL_ROUTING_KEY);
+            //声明队列
+            channel.queueDeclare(BiMqConstant.ORDER_DELAY_QUEUE, true, false, false, orderDelayArgs);
+            //绑定
+            channel.queueBind(BiMqConstant.ORDER_DELAY_QUEUE, BiMqConstant.ORDER_DELAY_EXCHANGE, BiMqConstant.ORDER_DELAY_ROUTING_KEY);
         } catch (IOException | TimeoutException e) {
             log.error("初始化交换机和队列失败，", e);
         }

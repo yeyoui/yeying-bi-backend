@@ -1,5 +1,6 @@
 package com.yeyou.yeyingBIbackend.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yeyou.yeyingBIbackend.common.ErrorCode;
@@ -29,6 +30,7 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
 
     @Resource
     private UserService userService;
+
     @Override
     public void validUserInterfaceInfo(UserInterfaceInfo userInterfaceInfo, boolean add) {
         //空参数
@@ -54,6 +56,31 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
         updateWrapper.eq("interfaceId", interfaceId).eq("userId", userId);
         updateWrapper.gt("surplusNum", 0);
         updateWrapper.setSql("totalNum=totalNum+1,surplusNum=surplusNum-1");
+        return this.update(updateWrapper);
+    }
+
+    @Override
+    public boolean updateAllocationInvokeNum(long interfaceId, long userId, int diff) {
+        //查询接口和用户参数是否正确
+        if (interfaceId < 0 || userId < 0)
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        //查询接口绑定信息是否存在，如果不存在就直接创建
+        QueryWrapper<UserInterfaceInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", userId).eq("interfaceId", interfaceId);
+        UserInterfaceInfo userInterfaceInfo = this.getOne(queryWrapper);
+        if (userInterfaceInfo == null) {
+            //新增绑定关系
+            userInterfaceInfo = new UserInterfaceInfo();
+            userInterfaceInfo.setUserId(userId);
+            userInterfaceInfo.setInterfaceId(interfaceId);
+            userInterfaceInfo.setSurplusNum(diff);
+            this.validUserInterfaceInfo(userInterfaceInfo, true);
+            return this.save(userInterfaceInfo);
+        }
+        //更新剩余调用数量
+        UpdateWrapper<UserInterfaceInfo> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("id", userInterfaceInfo.getId());
+        updateWrapper.setSql("surplusNum=surplusNum+" + diff);
         return this.update(updateWrapper);
     }
 }
