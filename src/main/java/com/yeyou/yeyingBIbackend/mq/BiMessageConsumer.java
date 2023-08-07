@@ -3,6 +3,7 @@ package com.yeyou.yeyingBIbackend.mq;
 import com.github.rholder.retry.*;
 import com.rabbitmq.client.Channel;
 import com.yeyou.yeyingBIbackend.common.ErrorCode;
+import com.yeyou.yeyingBIbackend.common.ExcelToSQLEntity;
 import com.yeyou.yeyingBIbackend.constant.CommonConstant;
 import com.yeyou.yeyingBIbackend.constant.RedisConstant;
 import com.yeyou.yeyingBIbackend.exception.BusinessException;
@@ -13,6 +14,7 @@ import com.yeyou.yeyingBIbackend.model.entity.ChartInfo;
 import com.yeyou.yeyingBIbackend.model.enums.ChartStatusEnum;
 import com.yeyou.yeyingBIbackend.service.ChartInfoService;
 import com.yeyou.yeyingBIbackend.service.UserChartInfoService;
+import com.yeyou.yeyingBIbackend.utils.ExcelUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
@@ -88,8 +90,10 @@ public class BiMessageConsumer {
         updateChartInfo.setId(chartInfo.getId());
         //从数据库中获取表格数据
         String chartDataCSV = userChartInfoService.getChartDataCSV(chartId);
+        StringBuilder aiRequestMsg = new StringBuilder();
+        aiRequestMsg.append(chartInfo.getGoal()).append(",图表的类型是").append(chartInfo.getChartType()).append("\n").append(chartDataCSV);
         //将请求发给AI处理
-        String aiRowAnswer = aiManager.doChat(CommonConstant.BI_CHART_ANALYZE_ID, chartDataCSV);
+        String aiRowAnswer = aiManager.doChat(CommonConstant.BI_CHART_ANALYZE_ID, aiRequestMsg.toString());
         //返回信息（去除换行符)
         String genResult = aiRowAnswer.replaceAll("\n", "");
         chartInfo.setGenResult(genResult);

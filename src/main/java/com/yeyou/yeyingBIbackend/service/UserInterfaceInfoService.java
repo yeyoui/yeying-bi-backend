@@ -19,13 +19,20 @@ public interface UserInterfaceInfoService extends IService<UserInterfaceInfo> {
 
 
     /**
-     * 接口调用计数
+     * 接口调用扣额
      *
      * @param interfaceId 接口id
      * @param userId      用户id
      * @return 是否成功
      */
-    boolean invokeCount(long interfaceId, long userId);
+    boolean invokeDeduction(long interfaceId, long userId);
+
+    /**
+     * 检查用户调用额度
+     * @param interfaceId 接口id
+     * @param userId      用户id
+     */
+    void validUserInvolveQuota(long interfaceId, long userId);
 
     /**
      * 更新用户接口调用数
@@ -33,7 +40,6 @@ public interface UserInterfaceInfoService extends IService<UserInterfaceInfo> {
      * @param interfaceId 接口id
      * @param userId      用户id
      * @param diff        新增或减少的调用数
-     * @return 是否成功
      */
-    boolean updateAllocationInvokeNum(long interfaceId, long userId, int diff);
+    void updateAllocationInvokeNum(long interfaceId, long userId, int diff);
 }

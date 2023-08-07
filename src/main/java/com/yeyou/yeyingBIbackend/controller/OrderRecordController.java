@@ -205,7 +205,7 @@ public class OrderRecordController {
         orderRecord.setUserId(loginUser.getId());
         long orderRecordId = orderRecordService.createOrder(orderRecord);
         //生成下单二维码
-        String paymentQR = orderRecordService.getPaymentQR(orderRecordId);
+        String paymentQR = orderRecordService.getPaymentURL(orderRecordId);
         //订单15分钟自动取消
         biMessageProducer.sendMsgToDelayOrder(String.valueOf(orderRecordId));
         return ResultUtils.success(paymentQR);

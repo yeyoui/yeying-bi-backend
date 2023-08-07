@@ -115,6 +115,11 @@ public class OrderRecordServiceImpl extends ServiceImpl<OrderRecordMapper, Order
         }
         return qrCode;
     }
+
+    @Override
+    public String getPaymentURL(long orderRecordId) {
+        return ALPAY_QR_ADDR + orderRecordId;
+    }
 }
 
 

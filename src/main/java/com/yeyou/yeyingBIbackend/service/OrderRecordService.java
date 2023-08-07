@@ -41,4 +41,10 @@ public interface OrderRecordService extends IService<OrderRecord> {
      * @return 二维码的代码信息
      */
     String getPaymentQR(long orderRecordId);
+    /**
+     * 获取支付地址
+     * @param orderRecordId 订单ID
+     * @return 地址
+     */
+    public String getPaymentURL(long orderRecordId);
 }

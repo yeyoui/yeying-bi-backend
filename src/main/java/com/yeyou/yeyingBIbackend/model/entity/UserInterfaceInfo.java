@@ -36,7 +36,7 @@ public class UserInterfaceInfo implements Serializable {
     /**
      * 状态 0-正常 1-禁用
      */
-    private OrderStatusEnum status;
+    private Integer status;
 
     /**
      * 总调用次数

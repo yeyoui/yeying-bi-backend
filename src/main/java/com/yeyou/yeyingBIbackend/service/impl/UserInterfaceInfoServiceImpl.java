@@ -4,20 +4,15 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yeyou.yeyingBIbackend.common.ErrorCode;
-import com.yeyou.yeyingBIbackend.common.ResultUtils;
 import com.yeyou.yeyingBIbackend.exception.BusinessException;
-import com.yeyou.yeyingBIbackend.model.entity.User;
+import com.yeyou.yeyingBIbackend.exception.ThrowUtils;
 import com.yeyou.yeyingBIbackend.model.entity.UserInterfaceInfo;
 import com.yeyou.yeyingBIbackend.service.UserInterfaceInfoService;
 import com.yeyou.yeyingBIbackend.mapper.UserInterfaceInfoMapper;
 import com.yeyou.yeyingBIbackend.service.UserService;
-import com.yeyou.yeyingBIbackend.utils.NetUtils;
-import io.netty.util.NetUtil;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-import java.util.List;
 
 /**
  * @author lhy
@@ -48,7 +43,7 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
 
 
     @Override
-    public boolean invokeCount(long interfaceId, long userId) {
+    public boolean invokeDeduction(long interfaceId, long userId) {
         //查询接口和用户参数是否正确
         if (interfaceId < 0 || userId < 0)
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -60,7 +55,18 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
     }
 
     @Override
-    public boolean updateAllocationInvokeNum(long interfaceId, long userId, int diff) {
+    public void validUserInvolveQuota(long interfaceId, long userId) {
+        QueryWrapper<UserInterfaceInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("interfaceId", interfaceId).eq("userId", userId);
+        UserInterfaceInfo userInterfaceInfo = this.getOne(queryWrapper);
+        //查看是否被禁用
+        ThrowUtils.throwIf(userInterfaceInfo.getStatus()==1,ErrorCode.FORBIDDEN_ERROR,"接口调用被禁用");
+        //查看是否还有调用次数
+        ThrowUtils.throwIf(userInterfaceInfo.getSurplusNum()<=0,ErrorCode.OPERATION_ERROR,"调用次数不足，请充值");
+    }
+
+    @Override
+    public void updateAllocationInvokeNum(long interfaceId, long userId, int diff) {
         //查询接口和用户参数是否正确
         if (interfaceId < 0 || userId < 0)
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -75,13 +81,14 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
             userInterfaceInfo.setInterfaceId(interfaceId);
             userInterfaceInfo.setSurplusNum(diff);
             this.validUserInterfaceInfo(userInterfaceInfo, true);
-            return this.save(userInterfaceInfo);
+            this.save(userInterfaceInfo);
+            return;
         }
         //更新剩余调用数量
         UpdateWrapper<UserInterfaceInfo> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", userInterfaceInfo.getId());
         updateWrapper.setSql("surplusNum=surplusNum+" + diff);
-        return this.update(updateWrapper);
+        this.update(updateWrapper);
     }
 }
 

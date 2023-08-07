@@ -56,8 +56,10 @@ public class BiDeadMessageConsumer {
             updateChartInfo.setId(chartInfo.getId());
             //从数据库中获取表格数据
             String chartDataCSV = userChartInfoService.getChartDataCSV(chartId);
+            StringBuilder aiRequestMsg = new StringBuilder();
+            aiRequestMsg.append(chartInfo.getGoal()).append(",图表的类型是").append(chartInfo.getChartType()).append("\n").append(chartDataCSV);
             //将请求发给AI处理
-            String aiRowAnswer = aiManager.doChat(CommonConstant.BI_CHART_ANALYZE_ID, chartDataCSV);
+            String aiRowAnswer = aiManager.doChat(CommonConstant.BI_CHART_ANALYZE_ID, aiRequestMsg.toString());
             //返回信息（去除换行符)
             String genResult = aiRowAnswer.replaceAll("\n","");
             chartInfo.setGenResult(genResult);

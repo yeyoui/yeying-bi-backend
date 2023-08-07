@@ -21,12 +21,14 @@ import com.yeyou.yeyingBIbackend.model.enums.ChartStatusEnum;
 import com.yeyou.yeyingBIbackend.model.enums.FileUploadBizEnum;
 import com.yeyou.yeyingBIbackend.service.ChartInfoService;
 import com.yeyou.yeyingBIbackend.service.UserChartInfoService;
+import com.yeyou.yeyingBIbackend.service.UserInterfaceInfoService;
 import com.yeyou.yeyingBIbackend.service.UserService;
 import com.yeyou.yeyingBIbackend.utils.ExcelUtils;
 import com.yeyou.yeyingBIbackend.utils.NetUtils;
 import com.yeyou.yeyingBIbackend.utils.ParseChartResultUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -54,6 +56,8 @@ public class ChartController {
     @Resource
     private UserService userService;
     @Resource
+    private UserInterfaceInfoService userInterfaceInfoService;
+    @Resource
     private ThreadPoolExecutor threadPoolExecutor;
     @Resource
     private BiMessageProducer biMessageProducer;
@@ -61,6 +65,8 @@ public class ChartController {
     private RedissonRateLimiterManager rateLimiterManager;
     @Resource
     private RedisOps redisOps;
+    @Value("${yeying.BI_INTERFACE_ID}")
+    private long BI_INTERFACE_ID;
     /**
      * AI模型ID
      */
@@ -411,10 +417,10 @@ public class ChartController {
         String originalFilename = multipartFile.getOriginalFilename();
         String fileSuffix = FileUtil.getSuffix(originalFilename);
         ThrowUtils.throwIf(!FileConstant.ACCEPTED_SUFFIX_LIST.contains(fileSuffix),ErrorCode.PAYLOAD_LARGE_ERROR);
-        //拼接提问信息
-        StringBuilder aiRequestMsg = new StringBuilder();
+        //计费
+        userInterfaceInfoService.validUserInvolveQuota(BI_INTERFACE_ID,loginUser.getId());
+        userInterfaceInfoService.invokeDeduction(BI_INTERFACE_ID,loginUser.getId());
         ExcelToSQLEntity excelToSQLEntity = ExcelUtils.excelToString(multipartFile);
-        aiRequestMsg.append(userGoal).append(",图表的类型是").append(chartType).append("\n").append(excelToSQLEntity.getStrCSV());
 
         //新增数据到数据库（默认状态是等待中）
         ChartInfo chartInfo = new ChartInfo();
