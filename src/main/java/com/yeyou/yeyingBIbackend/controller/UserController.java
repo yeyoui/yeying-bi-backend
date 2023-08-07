@@ -6,6 +6,7 @@ import com.yeyou.yeyingBIbackend.common.DeleteRequest;
 import com.yeyou.yeyingBIbackend.common.ErrorCode;
 import com.yeyou.yeyingBIbackend.common.ResultUtils;
 import com.yeyou.yeyingBIbackend.model.entity.User;
+import com.yeyou.yeyingBIbackend.model.enums.UserRoleEnum;
 import com.yeyou.yeyingBIbackend.model.vo.LoginUserVO;
 import com.yeyou.yeyingBIbackend.model.vo.UserVO;
 import com.yeyou.yeyingBIbackend.service.UserService;

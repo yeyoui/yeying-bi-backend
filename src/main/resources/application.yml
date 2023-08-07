@@ -11,9 +11,9 @@ spring:
   # session 配置
   session:
     # todo 取消注释开启分布式 session
-     store-type: redis
+    store-type: redis
     # 30 天过期
-     timeout: 2592000
+    timeout: 2592000
   # 数据库配置
   datasource:
     dynamic:
@@ -34,6 +34,7 @@ spring:
     virtual-host: yeyou_broker
     username: yeyoui
     password: 109712
+    publisher-confirm-type: correlated
   # Redis 配置
   redis:
     database: 1
@@ -53,17 +54,17 @@ spring:
       max-file-size: 10MB
 server:
   address: 0.0.0.0
-  port: 8101
+  port: 20919
   servlet:
     context-path: /api
     # cookie 30 天过期
     session:
       cookie:
         max-age: 2592000
-yuapi:
+yuapi: #鱼聪明AI SDK https://www.yucongming.com/
   client:
     access-key: xxxxxxx
-    secret-key: xxxxxx
+    secret-key: xxxxxxx
   modelId: 1681584105285783554
 mybatis-plus:
   configuration:
@@ -74,3 +75,15 @@ mybatis-plus:
       logic-delete-field: isDelete # 全局逻辑删除的实体字段名
       logic-delete-value: 1 # 逻辑已删除值（默认为 1）
       logic-not-delete-value: 0 # 逻辑未删除值（默认为 0）
+
+yeying:
+  BI_INTERFACE_ID: 111097126783 #接口id 临时
+  BI_INTERFACE_PRICE: 2 #接口价格 临时
+  SERVER_HOST:  https://73ef-112-5-108-31.ngrok-free.app # 服务公网地址
+
+pay:
+  alipay:
+    ALPAY_QR_ADDR: http://192.168.110.27:20919/api/payment/getPaymentView?orderRecordId= #二维码地址
+    APP_ID: xxxxxxxxxxx #支付宝沙箱
+    APP_PRIVATE_KEY: xxxxxxxx #支付宝沙箱
+    ALIPAY_PUBLIC_KEY: xxxxxxxxx #支付宝沙箱

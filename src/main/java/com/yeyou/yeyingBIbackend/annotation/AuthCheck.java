@@ -20,5 +20,12 @@ public @interface AuthCheck {
      */
     String mustRole() default "";
 
+    /**
+     * 有任何一个角色
+     *
+     * @return
+     */
+    String[] anyRole() default "";
+
 }
 

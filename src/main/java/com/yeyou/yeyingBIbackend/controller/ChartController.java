@@ -81,6 +81,7 @@ public class ChartController {
      * @return
      */
     @PostMapping("/add")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Long> addChartInfo(@RequestBody ChartInfoAddRequest chartInfoAddRequest, HttpServletRequest request) {
         if (chartInfoAddRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -173,6 +174,7 @@ public class ChartController {
      * @return
      */
     @PostMapping("/list/page/vo")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Page<ChartInfo>> listChartInfoVOByPage(@RequestBody ChartInfoQueryRequest chartInfoQueryRequest,
             HttpServletRequest request) {
         long current = chartInfoQueryRequest.getCurrent();
@@ -264,6 +266,8 @@ public class ChartController {
         String chartType = genChartByAiRequest.getChartType();
         //用户限流
         rateLimiterManager.doRateLimiter(loginUser.getId().toString());
+        //计费
+        userInterfaceInfoService.invokeDeduction(BI_INTERFACE_ID, loginUser.getId());
         //校验请求信息
         ThrowUtils.throwIf(userGoal==null,ErrorCode.PARAMS_ERROR,"目标为空");
         ThrowUtils.throwIf(chartName==null,ErrorCode.PARAMS_ERROR,"图表名称为空");
@@ -484,7 +488,7 @@ public class ChartController {
         User loginUser = userService.getLoginUser(NetUtils.getHttpServletRequest());
         rateLimiterManager.doRateLimiter(loginUser.getId().toString());
         //todo 权限校验
-
+        userInterfaceInfoService.invokeDeduction(BI_INTERFACE_ID, loginUser.getId());
         //更新图表状态
         ChartInfo chartInfo = new ChartInfo();
         chartInfo.setId(chartId);
