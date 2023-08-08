@@ -17,6 +17,7 @@ import com.yeyou.yeyingBIbackend.model.entity.User;
 import com.yeyou.yeyingBIbackend.model.entity.UserInterfaceInfo;
 import com.yeyou.yeyingBIbackend.service.UserInterfaceInfoService;
 import com.yeyou.yeyingBIbackend.service.UserService;
+import com.yeyou.yeyingBIbackend.utils.NetUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -141,6 +142,18 @@ public class UserInterfaceInfoController {
         }
         UserInterfaceInfo userInterfaceInfo = userInterfaceInfoService.getById(id);
         return ResultUtils.success(userInterfaceInfo);
+    }
+
+    /**
+     * 根据 id 获取
+     * @return
+     */
+    @GetMapping("/getMyStatus")
+    public BaseResponse<UserInterfaceInfo> getMyInterfaceInfo() {
+        User loginUser = userService.getLoginUser(NetUtils.getHttpServletRequest());
+
+        List<UserInterfaceInfo> interfaceInfos = userInterfaceInfoService.query().eq("userId", loginUser.getId()).list();
+        return ResultUtils.success(interfaceInfos.get(0));
     }
 
     /**

@@ -84,8 +84,8 @@ public class BiMqInit {
         // 创建用于指定死信队列的参数的Map对象
         //设置Order延迟队列TTL
         Map<String, Object> orderDelayArgs = new HashMap<>();
-        //TTL30秒
-        orderDelayArgs.put("x-message-ttl", 30000);
+        //TTL15分钟
+        orderDelayArgs.put("x-message-ttl", 15 * 60000);
         //设置死信交换机和key
         orderDelayArgs.put("x-dead-letter-exchange", BiMqConstant.ORDER_DEAD_EXCHANGE);
         orderDelayArgs.put("x-dead-letter-routing-key", BiMqConstant.ORDER_FAIL_ROUTING_KEY);

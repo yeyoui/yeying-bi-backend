@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/userChart")
-@Profile({"dev", "local"})
 public class UserChartController {
 
     @Resource
@@ -45,7 +44,7 @@ public class UserChartController {
         List<Map<String, String>> chartDataByTableMap = userChartInfoService.getChartDataByTableId(chartId);
         //设置key
         chartDataByTableMap.forEach(item->{
-            item.put("key", String.valueOf(cnt.getAndIncrement()));
+            item.put("id", String.valueOf(cnt.getAndIncrement()));
         });
         return ResultUtils.success(chartDataByTableMap);
     }

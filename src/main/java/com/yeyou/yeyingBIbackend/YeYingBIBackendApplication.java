@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  *
  */
 @SpringBootApplication
-@MapperScan({"com.yeyou.yeyingBIBackend.mapper","com.yeyou.yeyingBIbackend.generator.mapper"})
+@MapperScan({"com.yeyou.yeyingBIbackend.mapper"})
 @EnableScheduling
 @EnableAspectJAutoProxy(proxyTargetClass = true, exposeProxy = true)
 public class YeYingBIBackendApplication {

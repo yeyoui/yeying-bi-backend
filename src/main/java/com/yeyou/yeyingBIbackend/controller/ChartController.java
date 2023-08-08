@@ -3,6 +3,7 @@ package com.yeyou.yeyingBIbackend.controller;
 import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yeyou.yeyingBIbackend.annotation.AuthCheck;
+import com.yeyou.yeyingBIbackend.model.vo.ChartInfoVO;
 import com.yeyou.yeyingBIbackend.mq.BiMessageProducer;
 import com.yeyou.yeyingBIbackend.common.*;
 import com.yeyou.yeyingBIbackend.constant.CommonConstant;
@@ -36,7 +37,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.stream.Collectors;
 
 /**
  * 帖子接口
@@ -199,7 +202,7 @@ public class ChartController {
      * @return
      */
     @PostMapping("/my/list/page/vo")
-    public BaseResponse<Page<ChartInfo>> listMyChartInfoVOByPage(@RequestBody ChartInfoQueryRequest chartInfoQueryRequest,
+    public BaseResponse<Page<ChartInfoVO>> listMyChartInfoVOByPage(@RequestBody ChartInfoQueryRequest chartInfoQueryRequest,
             HttpServletRequest request) {
         if (chartInfoQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -210,12 +213,21 @@ public class ChartController {
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
         Page<ChartInfo> chartInfoPage = chartInfoService.page(new Page<>(current, size),
                 chartInfoService.getQueryWrapper(chartInfoQueryRequest,true));
+        Page<ChartInfoVO> chartInfoVOPage = new Page<>(current, size,chartInfoPage.getTotal());
         //处理表格数据
-        chartInfoPage
+        List<ChartInfoVO> chartInfoVOList = chartInfoPage
                 .getRecords()
-                .forEach(chartInfo -> chartInfo
-                        .setGenResult(ParseChartResultUtil.getResultAndChartCode(chartInfo.getGenResult()).getChartJsCode()));
-        return ResultUtils.success(chartInfoPage);
+                .stream()
+                .map(chartInfo -> {
+                    GenChartByAiResponse resultAndChartCode = ParseChartResultUtil.getResultAndChartCode(chartInfo.getGenResult());
+                    ChartInfoVO chartInfoVO = new ChartInfoVO();
+                    BeanUtils.copyProperties(chartInfo, chartInfoVO);
+                    chartInfoVO.setGenResult(resultAndChartCode.getGenResult());
+                    chartInfoVO.setChartDataJson(resultAndChartCode.getChartJsCode());
+                    return chartInfoVO;
+                }).collect(Collectors.toList());
+        chartInfoVOPage.setRecords(chartInfoVOList);
+        return ResultUtils.success(chartInfoVOPage);
     }
 
     /**
@@ -496,6 +508,11 @@ public class ChartController {
         //直接放入消息队列
         biMessageProducer.sendMsgToBI(chartId.toString());
         return ResultUtils.success("加入队列成功");
+    }
+
+    @GetMapping("/retEmpty")
+    public String retEmpty(){
+        return null;
     }
 
     /**

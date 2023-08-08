@@ -34,6 +34,8 @@ public class LogInterceptor {
     static {
         excludeUrlSet.add("/api/user/login");
         excludeUrlSet.add("/api/user/register");
+        excludeUrlSet.add("/api/payment/getPaymentView");
+        excludeUrlSet.add("/api/orderRecord/genOrderAndRetQR");
     }
 
     /**

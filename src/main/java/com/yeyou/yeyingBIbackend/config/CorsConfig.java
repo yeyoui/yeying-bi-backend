@@ -1,26 +1,54 @@
 package com.yeyou.yeyingBIbackend.config;
 
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 /**
- * 全局跨域配置
- *
+ * 过滤器解决跨域问题
  */
-@Configuration
-public class CorsConfig implements WebMvcConfigurer {
+@Component
+@Slf4j
+public class CorsConfig implements Filter {
+
+    private final List<String> ALLOW_ORIGINS= Arrays.asList(
+            "http://localhost:8919","http://yeapi.top:8919","http://yeapi.top:8000","http://localhost:8000"
+    );
 
     @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        // 覆盖所有请求
-        registry.addMapping("/**")
-                // 允许发送 Cookie
-                .allowCredentials(true)
-                // 放行哪些域名（必须用 patterns，否则 * 会和 allowCredentials 冲突）
-                .allowedOriginPatterns("*")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .exposedHeaders("*");
+    public void destroy() {
+
     }
+
+    @Override
+    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
+            throws IOException, ServletException {
+
+        HttpServletRequest request = (HttpServletRequest) req;
+        HttpServletResponse response = (HttpServletResponse) res;
+
+//        response.setHeader("Access-Control-Allow-Origin", "http://47.113.148.209:3000");
+        setCrosHeader(request.getHeader("Origin"),response);
+        response.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT");
+        response.setHeader("Access-Control-Max-Age", "3600");
+        response.setHeader("Access-Control-Allow-Headers", "content-type,Authorization");
+        response.setHeader("Access-Control-Allow-Credentials", "true");
+        chain.doFilter(req, res);
+
+    }
+    //设置Access-Control-Allow-Origin
+    private void setCrosHeader(String reqOrigin,HttpServletResponse response){
+        if(reqOrigin==null) return;
+        //匹配的地址才设置
+        if (ALLOW_ORIGINS.contains(reqOrigin)) response.setHeader("Access-Control-Allow-Origin",reqOrigin);
+        else log.error("host>>>>>>>>>{}",reqOrigin);
+    }
+
+
 }
