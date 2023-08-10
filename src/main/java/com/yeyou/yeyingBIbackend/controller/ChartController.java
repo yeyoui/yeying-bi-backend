@@ -3,13 +3,11 @@ package com.yeyou.yeyingBIbackend.controller;
 import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yeyou.yeyingBIbackend.annotation.AuthCheck;
+import com.yeyou.yeyingBIbackend.annotation.RedissonRateLimit;
+import com.yeyou.yeyingBIbackend.constant.*;
 import com.yeyou.yeyingBIbackend.model.vo.ChartInfoVO;
 import com.yeyou.yeyingBIbackend.mq.BiMessageProducer;
 import com.yeyou.yeyingBIbackend.common.*;
-import com.yeyou.yeyingBIbackend.constant.CommonConstant;
-import com.yeyou.yeyingBIbackend.constant.FileConstant;
-import com.yeyou.yeyingBIbackend.constant.RedisConstant;
-import com.yeyou.yeyingBIbackend.constant.UserConstant;
 import com.yeyou.yeyingBIbackend.exception.BusinessException;
 import com.yeyou.yeyingBIbackend.exception.ThrowUtils;
 import com.yeyou.yeyingBIbackend.manager.AIManager;
@@ -269,6 +267,7 @@ public class ChartController {
      * @return
      */
     @PostMapping("/genChartByAi")
+    @RedissonRateLimit(limitPreset = LimitPresetConstant.BI_GEN_CHART)
     public BaseResponse<GenChartByAiResponse> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
                                              GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         //获取当前用户信息
@@ -276,8 +275,6 @@ public class ChartController {
         String userGoal = genChartByAiRequest.getUserGoal();
         String chartName = genChartByAiRequest.getChartName();
         String chartType = genChartByAiRequest.getChartType();
-        //用户限流
-        rateLimiterManager.doRateLimiter(loginUser.getId().toString());
         //计费
         userInterfaceInfoService.invokeDeduction(BI_INTERFACE_ID, loginUser.getId());
         //校验请求信息
@@ -414,14 +411,13 @@ public class ChartController {
      * @return
      */
     @PostMapping("/genChartByAiAS/async/mq")
+    @RedissonRateLimit(limitPreset = LimitPresetConstant.BI_GEN_CHART)
     public BaseResponse<GenChartByAiResponse> genChartByAiASAsyncMq(@RequestPart("file") MultipartFile multipartFile, GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         //获取当前用户信息
         User loginUser = userService.getLoginUser(request);
         String userGoal = genChartByAiRequest.getUserGoal();
         String chartName = genChartByAiRequest.getChartName();
         String chartType = genChartByAiRequest.getChartType();
-        //用户限流
-        rateLimiterManager.doRateLimiter(loginUser.getId().toString());
         //校验请求信息
         ThrowUtils.throwIf(userGoal==null,ErrorCode.PARAMS_ERROR,"目标为空");
         ThrowUtils.throwIf(chartName==null,ErrorCode.PARAMS_ERROR,"图表名称为空");
@@ -495,11 +491,10 @@ public class ChartController {
      * @param chartId 图表ID
      */
     @GetMapping("/reSubmitChart")
-    public BaseResponse reSubmitChart(Long chartId){
+    @RedissonRateLimit(limitPreset = LimitPresetConstant.BI_GEN_CHART)
+    public BaseResponse<String> reSubmitChart(Long chartId){
         //用户限流
         User loginUser = userService.getLoginUser(NetUtils.getHttpServletRequest());
-        rateLimiterManager.doRateLimiter(loginUser.getId().toString());
-        //todo 权限校验
         userInterfaceInfoService.invokeDeduction(BI_INTERFACE_ID, loginUser.getId());
         //更新图表状态
         ChartInfo chartInfo = new ChartInfo();
@@ -510,9 +505,9 @@ public class ChartController {
         return ResultUtils.success("加入队列成功");
     }
 
-    @GetMapping("/retEmpty")
+    @PostMapping("/retEmpty")
     public String retEmpty(){
-        return null;
+        return "ok";
     }
 
     /**

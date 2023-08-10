@@ -15,6 +15,7 @@ import javax.annotation.Resource;
 
 @Service
 @Slf4j
+@Deprecated
 public class RedissonRateLimiterManager {
 
     @Resource
@@ -24,6 +25,7 @@ public class RedissonRateLimiterManager {
      * 通过Redisson实现限流
      * @param sign 限流的标识 一般为ID
      */
+    @Deprecated
     public void doRateLimiter(String sign){
         String key = "limit:user:";
         //根据用户ID限流

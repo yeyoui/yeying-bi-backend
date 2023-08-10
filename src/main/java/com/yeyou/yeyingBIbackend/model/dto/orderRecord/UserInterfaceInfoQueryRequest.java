@@ -1,4 +1,4 @@
-package com.yeyou.yeyingBIbackend.model.dto.orderRecord.userInterfaceInfo;
+package com.yeyou.yeyingBIbackend.model.dto.orderRecord;
 
 import com.yeyou.yeyingBIbackend.common.PageRequest;
 import com.yeyou.yeyingBIbackend.model.enums.OrderStatusEnum;

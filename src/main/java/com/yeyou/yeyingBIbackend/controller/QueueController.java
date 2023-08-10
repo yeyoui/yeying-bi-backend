@@ -1,10 +1,10 @@
 package com.yeyou.yeyingBIbackend.controller;
 
 import cn.hutool.json.JSONUtil;
-import com.rabbitmq.client.ReturnCallback;
+import com.yeyou.yeyingBIbackend.annotation.RedissonRateLimit;
+import com.yeyou.yeyingBIbackend.constant.LimitPresetConstant;
 import com.yeyou.yeyingBIbackend.mq.BiMessageProducer;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Profile;
@@ -78,5 +78,12 @@ public class QueueController {
         correlationData = new CorrelationData("2");
         rabbitTemplate.convertAndSend(TEST_CONFIRM_EXCHANGE,"TEST_CONFIR111M_KEY",msg,correlationData);
 
+    }
+
+    @GetMapping("/limit/get")
+    @RedissonRateLimit(limitPreset = LimitPresetConstant.BI_GEN_CHART)
+    public void limitTest(){
+        log.info("_____________________");
+        log.debug("测试限流——————");
     }
 }

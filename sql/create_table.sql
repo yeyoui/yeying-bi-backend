@@ -55,6 +55,21 @@ create table user_interface_info
     `isDelete`    tinyint  default 0                 not null comment '是否删除（0-未删  1-以删'
 ) comment '用户调用接口关系' collate = utf8mb4_unicode_ci;
 
+-- 接口限流表
+drop table if exists rate_limit_info;
+create table rate_limit_info
+(
+    `id`          bigint auto_increment primary key comment '主键',
+    `interfaceId` bigint                             not null comment '接口ID',
+    `redisKey` varchar(256)                             not null comment 'Redis中的键名',
+    `limitPreset`      int      default 0                 not null comment '限流预设值',
+    `rate`    int      default 0 comment '区间内科执行的次数',
+    `rateInterval`  int      default 0 comment '时间区间',
+    `createTime`  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    `updateTime`  datetime default CURRENT_TIMESTAMP not null on update current_timestamp comment '更新时间',
+    `isDelete`    tinyint  default 0                 not null comment '是否删除（0-未删  1-已删'
+) comment '接口限流表' collate = utf8mb4_unicode_ci;
+
 -- 支付订单表
 drop table if exists order_record;
 create table order_record

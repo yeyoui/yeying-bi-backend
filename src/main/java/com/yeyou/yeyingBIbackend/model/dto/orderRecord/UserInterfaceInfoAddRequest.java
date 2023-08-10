@@ -1,4 +1,4 @@
-package com.yeyou.yeyingBIbackend.model.dto.orderRecord.userInterfaceInfo;
+package com.yeyou.yeyingBIbackend.model.dto.orderRecord;
 
 import com.yeyou.yeyingBIbackend.model.enums.OrderStatusEnum;
 import lombok.Data;
@@ -6,17 +6,13 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 更新请求参数
+ * 接口添加请求参数
  *
  */
 @Data
-public class UserInterfaceInfoUpdateRequest implements Serializable {
-    private static final long serialVersionUID = -2992930400039826800L;
-    /**
-     * 主键
-     */
-    private Long id;
+public class UserInterfaceInfoAddRequest implements Serializable {
 
+    private static final long serialVersionUID = 2504395398821302448L;
     /**
      * 用户ID
      */
