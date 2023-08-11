@@ -89,7 +89,6 @@ public class RedissonRateLimitAspect {
                 type,
                 RedisConstant.BI_RATE_LIMIT_RATE_LOCK + ratePreset,
                 this::getRedisRateLimitConfig, RedisConstant.BI_RATE_LIMIT_RATE_TTL, TimeUnit.MINUTES);
-
         if(redisRateLimitConfig!=null){
             rateInterval = redisRateLimitConfig.getRateInterval();
             rate = redisRateLimitConfig.getRate();

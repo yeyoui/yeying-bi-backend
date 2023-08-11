@@ -24,12 +24,13 @@ public class RateLimiterTest {
     @Test
     public void tryMoreRequest() throws InterruptedException {
         for (int i = 0; i < 5; i++) {
-            rateLimiterManager.doRateLimiter(SIGN);
+            Thread.sleep(1000);
+            rateLimiterManager.doRateLimiter(SIGN,1,1);
             System.out.println(i);
         }
         Thread.sleep(1000);
         for (int i = 0; i < 5; i++) {
-            rateLimiterManager.doRateLimiter(SIGN);
+            rateLimiterManager.doRateLimiter(SIGN,1,1);
             System.out.println(i);
         }
     }

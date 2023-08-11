@@ -3,18 +3,17 @@ package com.yeyou.yeyingBIbackend.mq;
 import com.github.rholder.retry.*;
 import com.rabbitmq.client.Channel;
 import com.yeyou.yeyingBIbackend.common.ErrorCode;
-import com.yeyou.yeyingBIbackend.common.ExcelToSQLEntity;
 import com.yeyou.yeyingBIbackend.constant.CommonConstant;
 import com.yeyou.yeyingBIbackend.constant.RedisConstant;
 import com.yeyou.yeyingBIbackend.exception.BusinessException;
 import com.yeyou.yeyingBIbackend.exception.ThrowUtils;
 import com.yeyou.yeyingBIbackend.manager.AIManager;
 import com.yeyou.yeyingBIbackend.manager.RedisOps;
+import com.yeyou.yeyingBIbackend.manager.RedissonRateLimiterManager;
 import com.yeyou.yeyingBIbackend.model.entity.ChartInfo;
 import com.yeyou.yeyingBIbackend.model.enums.ChartStatusEnum;
 import com.yeyou.yeyingBIbackend.service.ChartInfoService;
 import com.yeyou.yeyingBIbackend.service.UserChartInfoService;
-import com.yeyou.yeyingBIbackend.utils.ExcelUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
@@ -23,7 +22,9 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -40,9 +41,23 @@ public class BiMessageConsumer {
     private AIManager aiManager;
     @Resource
     private RedisOps redisOps;
+    @Resource
+    private RedissonRateLimiterManager rateLimiterManager;
+
+    /**
+     * 自建线程池，用于管理所有AI任务
+     */
+    @Resource
+    private ThreadPoolExecutor threadPoolExecutor;
 
     @RabbitListener(queues = BiMqConstant.BI_QUEUE, ackMode = "MANUAL")
     public void receiveMessage(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
+        rateLimiterManager.doRateLimiter("BI分析图表任务",1,1);
+        //异步处理
+        CompletableFuture.runAsync(()->processMessage(message, channel, deliveryTag),threadPoolExecutor);
+    }
+
+    private void processMessage(String message, Channel channel, long deliveryTag) {
         //处理任务
         //用于更新任务状态
         ChartInfo updateChartInfo = new ChartInfo();
