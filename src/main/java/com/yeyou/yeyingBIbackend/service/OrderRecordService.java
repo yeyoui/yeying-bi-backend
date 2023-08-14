@@ -30,10 +30,11 @@ public interface OrderRecordService extends IService<OrderRecord> {
 
     /**
      * 根据接口ID计算价格
-     * @param interfaceInfos 接口id和购买数量的pair
+     * @param num 购买数量
+     * @param interfaceId 接口ID
      * @return 计算好的价格(单位 分)
      */
-    long calculatePrice(List<Pair<Long,Integer>> interfaceInfos);
+    long calculatePrice(long num,long interfaceId);
 
     /**
      * 获取支付二维码
@@ -46,5 +47,5 @@ public interface OrderRecordService extends IService<OrderRecord> {
      * @param orderRecordId 订单ID
      * @return 地址
      */
-    public String getPaymentURL(long orderRecordId);
+    String getPaymentURL(long orderRecordId);
 }

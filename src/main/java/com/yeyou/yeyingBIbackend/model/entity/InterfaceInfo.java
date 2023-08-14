@@ -4,50 +4,42 @@ import com.baomidou.mybatisplus.annotation.*;
 
 import java.io.Serializable;
 import java.util.Date;
+
+import com.yeyou.yeyingBIbackend.model.enums.InterfaceStatusEnum;
 import lombok.Data;
 
 /**
- * 用户表
- * @TableName user
+ * 接口信息表
+ * @TableName interface_info
  */
-@TableName(value ="user")
+@TableName(value ="interface_info")
 @Data
-public class User implements Serializable {
+public class InterfaceInfo implements Serializable {
     /**
-     * 用户id
+     * 接口ID
      */
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     /**
-     * 账号
+     * 接口名称
      */
-    private String userAccount;
+    private String interfaceName;
 
     /**
-     * 密码
+     * 接口描述
      */
-    private String userPassword;
+    private String interfaceDescribe;
 
     /**
-     * 用户昵称
+     * 状态 0-禁用 1-维护 2-正常
      */
-    private String userName;
+    private InterfaceStatusEnum status;
 
     /**
-     * 用户头像
+     * 费用
      */
-    private String userAvatar;
-
-    /**
-     * 用户角色：user/admin/ban
-     */
-    private String userRole;
-
-    /**
-     * 用户积分
-     */
-    private Long credits;
+    private Integer expenses;
 
     /**
      * 创建时间
@@ -60,7 +52,7 @@ public class User implements Serializable {
     private Date updateTime;
 
     /**
-     * 是否删除
+     * 是否删除（0-未删  1-已删
      */
     @TableLogic
     private Integer isDelete;

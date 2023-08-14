@@ -5,6 +5,7 @@ import com.yeyou.yeyingBIbackend.common.BaseResponse;
 import com.yeyou.yeyingBIbackend.common.DeleteRequest;
 import com.yeyou.yeyingBIbackend.common.ErrorCode;
 import com.yeyou.yeyingBIbackend.common.ResultUtils;
+import com.yeyou.yeyingBIbackend.model.dto.user.*;
 import com.yeyou.yeyingBIbackend.model.entity.User;
 import com.yeyou.yeyingBIbackend.model.enums.UserRoleEnum;
 import com.yeyou.yeyingBIbackend.model.vo.LoginUserVO;
@@ -14,24 +15,16 @@ import com.yeyou.yeyingBIbackend.annotation.AuthCheck;
 import com.yeyou.yeyingBIbackend.constant.UserConstant;
 import com.yeyou.yeyingBIbackend.exception.BusinessException;
 import com.yeyou.yeyingBIbackend.exception.ThrowUtils;
-import com.yeyou.yeyingBIbackend.model.dto.user.UserAddRequest;
-import com.yeyou.yeyingBIbackend.model.dto.user.UserLoginRequest;
-import com.yeyou.yeyingBIbackend.model.dto.user.UserQueryRequest;
-import com.yeyou.yeyingBIbackend.model.dto.user.UserRegisterRequest;
-import com.yeyou.yeyingBIbackend.model.dto.user.UserUpdateMyRequest;
-import com.yeyou.yeyingBIbackend.model.dto.user.UserUpdateRequest;
 
 import java.util.List;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+
+import com.yeyou.yeyingBIbackend.utils.NetUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 用户接口
@@ -44,9 +37,6 @@ public class UserController {
 
     @Resource
     private UserService userService;
-
-
-    // region 登录相关
 
     /**
      * 用户注册
@@ -254,8 +244,6 @@ public class UserController {
         return ResultUtils.success(userVOPage);
     }
 
-    // endregion
-
     /**
      * 更新个人信息
      *
@@ -276,5 +264,19 @@ public class UserController {
         boolean result = userService.updateById(user);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
+    }
+
+    @PutMapping
+    public BaseResponse<DailySignStatus> doDailySign(@RequestParam(required = false) String dateStr){
+        Long uid = userService.getLoginUser(NetUtils.getHttpServletRequest()).getId();
+        DailySignStatus dailySignStatus = userService.dailySign(uid, dateStr, true);
+        return ResultUtils.success(dailySignStatus);
+    }
+
+    @GetMapping
+    public BaseResponse<DailySignStatus> getDailySignStatus(){
+        Long uid = userService.getLoginUser(NetUtils.getHttpServletRequest()).getId();
+        DailySignStatus dailySignStatus = userService.dailySign(uid, null, false);
+        return ResultUtils.success(dailySignStatus);
     }
 }

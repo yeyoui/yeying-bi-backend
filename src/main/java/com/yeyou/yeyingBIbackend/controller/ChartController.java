@@ -59,11 +59,7 @@ public class ChartController {
     @Resource
     private UserInterfaceInfoService userInterfaceInfoService;
     @Resource
-    private ThreadPoolExecutor threadPoolExecutor;
-    @Resource
     private BiMessageProducer biMessageProducer;
-    @Resource
-    private RedissonRateLimiterManager rateLimiterManager;
     @Resource
     private RedisOps redisOps;
     @Value("${yeying.BI_INTERFACE_ID}")
@@ -276,7 +272,9 @@ public class ChartController {
         String chartName = genChartByAiRequest.getChartName();
         String chartType = genChartByAiRequest.getChartType();
         //计费
-        userInterfaceInfoService.invokeDeduction(BI_INTERFACE_ID, loginUser.getId());
+//        userInterfaceInfoService.invokeDeduction(BI_INTERFACE_ID, loginUser.getId());
+        userService.invokeDeduction(BI_INTERFACE_ID, loginUser.getId());
+
         //校验请求信息
         ThrowUtils.throwIf(userGoal==null,ErrorCode.PARAMS_ERROR,"目标为空");
         ThrowUtils.throwIf(chartName==null,ErrorCode.PARAMS_ERROR,"图表名称为空");
@@ -430,8 +428,9 @@ public class ChartController {
         String fileSuffix = FileUtil.getSuffix(originalFilename);
         ThrowUtils.throwIf(!FileConstant.ACCEPTED_SUFFIX_LIST.contains(fileSuffix),ErrorCode.PAYLOAD_LARGE_ERROR);
         //计费
-        userInterfaceInfoService.validUserInvolveQuota(BI_INTERFACE_ID,loginUser.getId());
-        userInterfaceInfoService.invokeDeduction(BI_INTERFACE_ID,loginUser.getId());
+//        userInterfaceInfoService.validUserInvolveQuota(BI_INTERFACE_ID,loginUser.getId());
+//        userInterfaceInfoService.invokeDeduction(BI_INTERFACE_ID,loginUser.getId());
+        userService.invokeDeduction(BI_INTERFACE_ID, loginUser.getId());
         ExcelToSQLEntity excelToSQLEntity = ExcelUtils.excelToString(multipartFile);
 
         //新增数据到数据库（默认状态是等待中）
@@ -495,7 +494,8 @@ public class ChartController {
     public BaseResponse<String> reSubmitChart(Long chartId){
         //用户限流
         User loginUser = userService.getLoginUser(NetUtils.getHttpServletRequest());
-        userInterfaceInfoService.invokeDeduction(BI_INTERFACE_ID, loginUser.getId());
+        userService.invokeDeduction(BI_INTERFACE_ID, loginUser.getId());
+//        userInterfaceInfoService.invokeDeduction(BI_INTERFACE_ID, loginUser.getId());
         //更新图表状态
         ChartInfo chartInfo = new ChartInfo();
         chartInfo.setId(chartId);

@@ -3,16 +3,18 @@ package com.yeyou.yeyingBIbackend.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yeyou.yeyingBIbackend.annotation.AuthCheck;
+import com.yeyou.yeyingBIbackend.annotation.RedissonRateLimit;
 import com.yeyou.yeyingBIbackend.common.BaseResponse;
 import com.yeyou.yeyingBIbackend.common.DeleteRequest;
 import com.yeyou.yeyingBIbackend.common.ErrorCode;
 import com.yeyou.yeyingBIbackend.common.ResultUtils;
 import com.yeyou.yeyingBIbackend.constant.CommonConstant;
+import com.yeyou.yeyingBIbackend.constant.LimitPresetConstant;
 import com.yeyou.yeyingBIbackend.constant.UserConstant;
 import com.yeyou.yeyingBIbackend.exception.BusinessException;
-import com.yeyou.yeyingBIbackend.model.dto.userInterfaceInfo.OrderRecordAddRequest;
-import com.yeyou.yeyingBIbackend.model.dto.userInterfaceInfo.OrderRecordQueryRequest;
-import com.yeyou.yeyingBIbackend.model.dto.userInterfaceInfo.OrderRecordUpdateRequest;
+import com.yeyou.yeyingBIbackend.model.dto.orderRecord.OrderRecordAddRequest;
+import com.yeyou.yeyingBIbackend.model.dto.orderRecord.OrderRecordQueryRequest;
+import com.yeyou.yeyingBIbackend.model.dto.orderRecord.OrderRecordUpdateRequest;
 import com.yeyou.yeyingBIbackend.model.entity.User;
 import com.yeyou.yeyingBIbackend.model.entity.OrderRecord;
 import com.yeyou.yeyingBIbackend.mq.BiMessageProducer;
@@ -151,8 +153,8 @@ public class OrderRecordController {
      * @return
      */
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    @GetMapping("/list")
-    public BaseResponse<List<OrderRecord>> listOrderRecord(OrderRecordQueryRequest orderRecordQueryRequest) {
+    @PostMapping("/list")
+    public BaseResponse<List<OrderRecord>> listOrderRecord(@RequestBody OrderRecordQueryRequest orderRecordQueryRequest) {
         OrderRecord orderRecordQuery = new OrderRecord();
         if (orderRecordQueryRequest != null) {
             BeanUtils.copyProperties(orderRecordQueryRequest, orderRecordQuery);
@@ -169,9 +171,9 @@ public class OrderRecordController {
      * @param request
      * @return
      */
-    @GetMapping("/list/page")
+    @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<OrderRecord>> listOrderRecordByPage(OrderRecordQueryRequest orderRecordQueryRequest, HttpServletRequest request) {
+    public BaseResponse<Page<OrderRecord>> listOrderRecordByPage(@RequestBody OrderRecordQueryRequest orderRecordQueryRequest, HttpServletRequest request) {
         if (orderRecordQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -193,6 +195,7 @@ public class OrderRecordController {
     }
 
     @PostMapping("/genOrderAndRetQR")
+    @RedissonRateLimit(limitPreset = LimitPresetConstant.BI_GEN_CHART)
     public BaseResponse<String> genOrderAndRetQR(@RequestBody OrderRecordAddRequest orderRecordAddRequest){
         if(orderRecordAddRequest==null){
             throw new BusinessException(ErrorCode.PARAMS_ERROR);

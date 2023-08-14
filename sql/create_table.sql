@@ -13,6 +13,7 @@ create table if not exists user
     userName     varchar(256)                           null comment '用户昵称',
     userAvatar   varchar(1024)                          null comment '用户头像',
     userRole     varchar(256) default 'user'            not null comment '用户角色：user/admin/ban',
+    credits      bigint       default 0 comment '用户积分',
     createTime   datetime     default CURRENT_TIMESTAMP not null comment '创建时间',
     updateTime   datetime     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     isDelete     tinyint      default 0                 not null comment '是否删除',
@@ -41,33 +42,47 @@ create table if not exists chart_info
 
 
 -- 用户调用接口关系表
-drop table if exists user_interface_info;
-create table user_interface_info
+# drop table if exists user_interface_info;
+# create table user_interface_info
+# (
+#     `id`          bigint auto_increment primary key comment '主键',
+#     `userId`      bigint                             not null comment '用户ID',
+#     `interfaceId` bigint                             not null comment '接口ID',
+#     `status`      int      default 0                 not null comment '状态 0-正常 1-禁用',
+#     `totalNum`    int      default 0 comment '总调用次数',
+#     `surplusNum`  int      default 0 comment '剩余调用次数',
+#     `createTime`  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+#     `updateTime`  datetime default CURRENT_TIMESTAMP not null on update current_timestamp comment '更新时间',
+#     `isDelete`    tinyint  default 0                 not null comment '是否删除（0-未删  1-已删'
+# ) comment '用户调用接口关系' collate = utf8mb4_unicode_ci;
+
+-- 接口信息表
+drop table if exists interface_info;
+create table interface_info
 (
-    `id`          bigint auto_increment primary key comment '主键',
-    `userId`      bigint                             not null comment '用户ID',
-    `interfaceId` bigint                             not null comment '接口ID',
-    `status`      int      default 0                 not null comment '状态 0-正常 1-禁用',
-    `totalNum`    int      default 0 comment '总调用次数',
-    `surplusNum`  int      default 0 comment '剩余调用次数',
-    `createTime`  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
-    `updateTime`  datetime default CURRENT_TIMESTAMP not null on update current_timestamp comment '更新时间',
-    `isDelete`    tinyint  default 0                 not null comment '是否删除（0-未删  1-以删'
-) comment '用户调用接口关系' collate = utf8mb4_unicode_ci;
+    `id`            bigint auto_increment primary key comment '接口ID',
+    `interfaceName` varchar(256)                       not null comment '接口名称',
+    `interfaceDescribe`      text                               null comment '接口描述',
+    `status`        int      default 0                 not null comment '状态 0-禁用 1-维护 2-正常',
+    `expenses`      int      default 999999 comment '费用',
+    `createTime`    datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    `updateTime`    datetime default CURRENT_TIMESTAMP not null on update current_timestamp comment '更新时间',
+    `isDelete`      tinyint  default 0                 not null comment '是否删除（0-未删  1-已删'
+) comment '接口信息表' collate = utf8mb4_unicode_ci;
 
 -- 接口限流表
 drop table if exists rate_limit_info;
 create table rate_limit_info
 (
-    `id`          bigint auto_increment primary key comment '主键',
-    `interfaceId` bigint                             not null comment '接口ID',
-    `redisKey` varchar(256)                             not null comment 'Redis中的键名',
-    `limitPreset`      int      default 0                 not null comment '限流预设值',
-    `rate`    int      default 0 comment '区间内科执行的次数',
-    `rateInterval`  int      default 0 comment '时间区间',
-    `createTime`  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
-    `updateTime`  datetime default CURRENT_TIMESTAMP not null on update current_timestamp comment '更新时间',
-    `isDelete`    tinyint  default 0                 not null comment '是否删除（0-未删  1-已删'
+    `id`           bigint auto_increment primary key comment '主键',
+    `interfaceId`  bigint                             not null comment '接口ID',
+    `redisKey`     varchar(256)                       not null comment 'Redis中的键名',
+    `limitPreset`  int      default 0                 not null comment '限流预设值',
+    `rate`         int      default 0 comment '区间内科执行的次数',
+    `rateInterval` int      default 0 comment '时间区间',
+    `createTime`   datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    `updateTime`   datetime default CURRENT_TIMESTAMP not null on update current_timestamp comment '更新时间',
+    `isDelete`     tinyint  default 0                 not null comment '是否删除（0-未删  1-已删'
 ) comment '接口限流表' collate = utf8mb4_unicode_ci;
 
 -- 支付订单表
@@ -87,8 +102,8 @@ create table order_record
     `paySuccessTime` datetime                               null comment '支付成功时间',
     `createTime`     datetime     default CURRENT_TIMESTAMP not null comment '创建时间',
     `updateTime`     datetime     default CURRENT_TIMESTAMP not null on update current_timestamp comment '更新时间',
-    `isDelete`       tinyint      default 0                 not null comment '是否删除（0-未删  1-以删'
-) comment '用户调用接口关系' collate = utf8mb4_unicode_ci;
+    `isDelete`       tinyint      default 0                 not null comment '是否删除（0-未删  1-已删'
+) comment '支付订单表' collate = utf8mb4_unicode_ci;
 
 -- 创建库
 create database if not exists yeying_user_upload_table;

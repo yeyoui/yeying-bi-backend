@@ -6,8 +6,11 @@ import com.yeyou.yeyingBIbackend.constant.RedisConstant;
 import com.yeyou.yeyingBIbackend.exception.BusinessException;
 import com.yeyou.yeyingBIbackend.manager.RedisOps;
 import com.yeyou.yeyingBIbackend.model.entity.ChartInfo;
+import com.yeyou.yeyingBIbackend.model.entity.InterfaceInfo;
 import com.yeyou.yeyingBIbackend.service.ChartInfoService;
+import com.yeyou.yeyingBIbackend.service.InterfaceInfoService;
 import com.yeyou.yeyingBIbackend.service.UserInterfaceInfoService;
+import com.yeyou.yeyingBIbackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.ReturnedMessage;
@@ -36,6 +39,10 @@ public class BiMessageProducer implements RabbitTemplate.ReturnsCallback {
     private ChartInfoService chartInfoService;
     @Resource
     private UserInterfaceInfoService userInterfaceInfoService;
+    @Resource
+    private UserService userService;
+    @Resource
+    private InterfaceInfoService interfaceInfoService;
     @Value("${yeying.BI_INTERFACE_ID}")
     private long BI_INTERFACE_ID;
 
@@ -95,8 +102,11 @@ public class BiMessageProducer implements RabbitTemplate.ReturnsCallback {
                     log.error("获取图表ID出现异常，表格id[{}]", message);
                     return;
                 }
-                //用户的剩余调用数+1
-                userInterfaceInfoService.updateAllocationInvokeNum(BI_INTERFACE_ID, chartInfo.getUid(), 1);
+                InterfaceInfo interfaceInfo = interfaceInfoService.getById(BI_INTERFACE_ID);
+                //补偿用户积分
+                userService.updateAllocationCredits(chartInfo.getUid(), interfaceInfo.getExpenses());
+//                //用户的剩余调用数+1
+//                userInterfaceInfoService.updateAllocationInvokeNum(BI_INTERFACE_ID, chartInfo.getUid(), 1);
             }
         }
     }

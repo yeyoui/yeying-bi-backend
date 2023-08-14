@@ -42,6 +42,11 @@ spring:
     port: 6379
     timeout: 5000
     password: 123456
+  #模板引擎
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: false
   # 日期配置
   jackson:
     default-property-inclusion: ALWAYS
@@ -67,8 +72,10 @@ yuapi: #鱼聪明AI SDK https://www.yucongming.com/
     secret-key: xxxxxxx
   modelId: 1681584105285783554
 mybatis-plus:
+  #  mapper-locations: classpath:/mapper/**/*.xml
   configuration:
     map-underscore-to-camel-case: false
+    #    log-impl: ''
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
@@ -77,13 +84,12 @@ mybatis-plus:
       logic-not-delete-value: 0 # 逻辑未删除值（默认为 0）
 
 yeying:
-  BI_INTERFACE_ID: 111097126783 #接口id 临时
-  BI_INTERFACE_PRICE: 2 #接口价格 临时
+  BI_INTERFACE_ID: 1689903047737675777
   SERVER_HOST:  https://73ef-112-5-108-31.ngrok-free.app # 服务公网地址
 
 pay:
   alipay:
-    ALPAY_QR_ADDR: http://192.168.110.27:20919/api/payment/getPaymentView?orderRecordId= #二维码地址
+    ALPAY_QR_ADDR: http://192.168.110.27:20919/api/payment/getPaymentView?orderRecordId=
     APP_ID: xxxxxxxxxxx #支付宝沙箱
     APP_PRIVATE_KEY: xxxxxxxx #支付宝沙箱
     ALIPAY_PUBLIC_KEY: xxxxxxxxx #支付宝沙箱

@@ -6,6 +6,7 @@
 
     <resultMap id="BaseResultMap" type="com.yeyou.yeyingBIbackend.model.entity.User">
             <id property="id" column="id" jdbcType="BIGINT"/>
+            <id property="credits" column="credits" jdbcType="BIGINT"/>
             <result property="userAccount" column="userAccount" jdbcType="VARCHAR"/>
             <result property="userPassword" column="userPassword" jdbcType="VARCHAR"/>
             <result property="userName" column="userName" jdbcType="VARCHAR"/>
@@ -18,7 +19,7 @@
 
     <sql id="Base_Column_List">
         id,userAccount,userPassword,
-        userName,userAvatar,userRole,
+        userName,userAvatar,userRole,credits,
         createTime,updateTime,isDelete
     </sql>
 </mapper>

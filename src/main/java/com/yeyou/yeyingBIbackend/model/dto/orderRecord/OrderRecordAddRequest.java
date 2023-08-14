@@ -1,4 +1,4 @@
-package com.yeyou.yeyingBIbackend.model.dto.userInterfaceInfo;
+package com.yeyou.yeyingBIbackend.model.dto.orderRecord;
 
 import com.yeyou.yeyingBIbackend.model.enums.OrderTypeEnum;
 import lombok.Data;

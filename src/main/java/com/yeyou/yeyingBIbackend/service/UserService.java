@@ -2,6 +2,7 @@ package com.yeyou.yeyingBIbackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.yeyou.yeyingBIbackend.model.dto.user.DailySignStatus;
 import com.yeyou.yeyingBIbackend.model.dto.user.UserQueryRequest;
 import com.yeyou.yeyingBIbackend.model.entity.User;
 import com.yeyou.yeyingBIbackend.model.vo.LoginUserVO;
@@ -107,5 +108,36 @@ public interface UserService extends IService<User> {
      * @return
      */
     QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest);
+
+    /**
+     * 接口调用扣额
+     *
+     * @param interfaceId 接口id
+     * @param userId      用户id
+     * @return 是否成功
+     */
+    void invokeDeduction(long interfaceId, long userId);
+
+    /**
+     * 更新用户积分
+     *
+     * @param userId      用户id
+     * @param diff        新增或减少的调用数
+     */
+    void updateAllocationCredits(long userId, int diff);
+
+
+    //-------------------------签到
+
+    /**
+     * 执行签到
+     *
+     * @param userId  用户ID
+     * @param dateStr 查询的日期，默认当天 yyyy-MM-dd
+     * @param doSign  操作是签到为true，否则为查询签到情况
+     * @return
+     */
+    DailySignStatus dailySign(Long userId, String dateStr, boolean doSign);
+
 
 }

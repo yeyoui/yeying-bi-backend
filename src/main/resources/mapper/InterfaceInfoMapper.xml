@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yeyou.yeyingBIbackend.mapper.InterfaceInfoMapper">
+
+    <resultMap id="BaseResultMap" type="com.yeyou.yeyingBIbackend.model.entity.InterfaceInfo">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="interfaceName" column="interfaceName" jdbcType="VARCHAR"/>
+            <result property="interfaceDescribe" column="interfaceDescribe" jdbcType="VARCHAR"/>
+            <result property="status" column="status" jdbcType="INTEGER"/>
+            <result property="expenses" column="expenses" jdbcType="INTEGER"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,interfaceName,interfaceDescribe,
+        status,expenses,createTime,
+        updateTime,isDelete
+    </sql>
+</mapper>

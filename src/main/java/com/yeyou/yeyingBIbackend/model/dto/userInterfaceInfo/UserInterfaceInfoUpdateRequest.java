@@ -1,21 +1,17 @@
-package com.yeyou.yeyingBIbackend.model.dto.orderRecord;
+package com.yeyou.yeyingBIbackend.model.dto.userInterfaceInfo;
 
-import com.yeyou.yeyingBIbackend.common.PageRequest;
 import com.yeyou.yeyingBIbackend.model.enums.OrderStatusEnum;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 
 /**
- * 接口查询请求参数
+ * 更新请求参数
  *
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
-public class UserInterfaceInfoQueryRequest extends PageRequest implements Serializable {
-
-    private static final long serialVersionUID = 471278761377557210L;
+public class UserInterfaceInfoUpdateRequest implements Serializable {
+    private static final long serialVersionUID = -2992930400039826800L;
     /**
      * 主键
      */

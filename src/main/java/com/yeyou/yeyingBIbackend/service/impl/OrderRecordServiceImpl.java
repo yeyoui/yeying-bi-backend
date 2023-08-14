@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yeyou.yeyingBIbackend.common.ErrorCode;
 import com.yeyou.yeyingBIbackend.exception.BusinessException;
 import com.yeyou.yeyingBIbackend.exception.ThrowUtils;
+import com.yeyou.yeyingBIbackend.model.entity.InterfaceInfo;
 import com.yeyou.yeyingBIbackend.model.entity.OrderRecord;
 import com.yeyou.yeyingBIbackend.model.entity.UserInterfaceInfo;
+import com.yeyou.yeyingBIbackend.service.InterfaceInfoService;
 import com.yeyou.yeyingBIbackend.service.OrderRecordService;
 import com.yeyou.yeyingBIbackend.mapper.OrderRecordMapper;
 import com.yeyou.yeyingBIbackend.utils.QRCodeUtil;
@@ -40,10 +42,10 @@ public class OrderRecordServiceImpl extends ServiceImpl<OrderRecordMapper, Order
     private RedisIdWorker redisIdWorker;
     @Value("${yeying.BI_INTERFACE_ID}")
     private Long BI_INTERFACE_ID;
-    @Value("${yeying.BI_INTERFACE_PRICE}")
-    private Integer BI_INTERFACE_PRICE;
     @Value("${pay.alipay.ALPAY_QR_ADDR}")
     String ALPAY_QR_ADDR;
+    @Resource
+    private InterfaceInfoService interfaceInfoService;
 
     @Override
     public void validOrderRecord(OrderRecord orderRecord, boolean add) {
@@ -76,11 +78,8 @@ public class OrderRecordServiceImpl extends ServiceImpl<OrderRecordMapper, Order
     public long createOrder(OrderRecord orderRecord) {
         //校验参数是否正确
         this.validOrderRecord(orderRecord, true);
-        ArrayList<Pair<Long, Integer>> interfaceInfos = new ArrayList<>();
-        //todo 目前只有一个接口
-        interfaceInfos.add(new Pair<>(BI_INTERFACE_ID, orderRecord.getTotalNum()));
         //计算总价
-        long totalPrice = this.calculatePrice(interfaceInfos);
+        long totalPrice = this.calculatePrice(orderRecord.getTotalNum(),orderRecord.getInterfaceId());
         ThrowUtils.throwIf(totalPrice<0,ErrorCode.SYSTEM_ERROR,"价格异常");
         orderRecord.setTotalPrice(totalPrice);
         //新增订单
@@ -90,16 +89,11 @@ public class OrderRecordServiceImpl extends ServiceImpl<OrderRecordMapper, Order
     }
 
     @Override
-    public long calculatePrice(List<Pair<Long, Integer>> interfaceInfos) {
+    public long calculatePrice(long num,long interfaceId) {
+        InterfaceInfo interfaceInfo = interfaceInfoService.getById(interfaceId);
         long sum = 0L;
-        //获取接口信息
-        //todo 接入数据库
-        for (Pair<Long, Integer> interfacePair : interfaceInfos) {
-            Long interfaceId = interfacePair.getKey();
-            Integer purchaseNum = interfacePair.getValue();
-            Integer price = BI_INTERFACE_PRICE;
-            sum += (purchaseNum) * price;
-        }
+        Integer price = interfaceInfo.getExpenses();
+        sum += (num) * price;
         return sum;
     }
 
