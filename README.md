@@ -1,6 +1,8 @@
 # 夜鹰智能BI平台
 ## 主体功能设计
+> 基本业务流程
 
+![](doc/artifact.png)
 ### 基本增删改查校验
 
 ...略过
@@ -84,3 +86,20 @@ PS: 通过修改Redis缓存（短时）或者数据库的限流配置信息（�
 1. 自建线程池对任务进行管理，每次加入提交工作的时候，通过注入的Redisson限流工具类来完成限流
 ### 反向压力
 1. 通过每次检查AI的返回信息，获取AI服务的运行情况，如果负载过高，通过修改缓存来实现短暂的限流策略调整
+
+## 演示
+![主页面](doc/operation/img.png)
+<div style="text-align: center;">主页面</div>
+
+![详细页](doc/operation/img_1.png)
+<div style="text-align: center;">详细页</div>
+
+![异步调用](doc/operation/img_2.png)
+<div style="text-align: center;">异步调用</div>
+
+![异步调用成功的详细页](doc/operation/img_3.png)
+<div style="text-align: center;">异步调用成功的详细页</div>
+
+![积分系统](doc/operation/img_4.png)
+<div style="text-align: center;">积分系统</div>
+
